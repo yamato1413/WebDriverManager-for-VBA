@@ -47,22 +47,12 @@ Private Property Get ZipPath(browser As BrowserName) As String
 End Property
 
 
-'// WebDriverの実行ファイルの保存場所をレジストリに記録している
+'// WebDriverの実行ファイルの保存場所
 '// デフォルトは\AppData\Local\SeleniumBasic\
-'// このパスを書き換えるプロシージャは以下の通り
-'//     chromedriver.exe
-'//     Property Let WebDriverPath
-'//     InstallWebDriver
-Public Property Let WebDriverPath(browser As BrowserName, path_driver As String)
-    Select Case browser
-        Case BrowserName.Chrome: SaveSetting "WebDriverManager", "WebDriverPath", "Chrome", path_driver
-        Case BrowserName.Edge:   SaveSetting "WebDriverManager", "WebDriverPath", "Edge", path_driver
-    End Select
-End Property
 Public Property Get WebDriverPath(browser As BrowserName) As String
     Select Case browser
-        Case BrowserName.Chrome: WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Chrome", "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\chromedriver.exe")
-        Case BrowserName.Edge:   WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Edge", "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\edgedriver.exe")
+        Case BrowserName.Chrome: WebDriverPath = "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\chromedriver.exe"
+        Case BrowserName.Edge:   WebDriverPath = "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\edgedriver.exe"
     End Select
 End Property
 
@@ -236,14 +226,14 @@ Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
     Loop
     Debug.Print "   ダウンロード完了:" & path_zip
     
-    If path_driver <> "" Then WebDriverPath(browser) = path_driver
+    If path_driver = "" Then path_driver = WebDriverPath(browser)
     
-    If Not fso.FolderExists(fso.GetParentFolderName(WebDriverPath(browser))) Then
+    If Not fso.FolderExists(fso.GetParentFolderName(path_driver)) Then
         Debug.Print "   WebDriverの保存先フォルダを作成します"
-        CreateFolderEx fso.GetParentFolderName(WebDriverPath(browser))
+        CreateFolderEx fso.GetParentFolderName(path_driver)
     End If
     
-    Extract path_zip, WebDriverPath(browser)
+    Extract path_zip, path_driver
     
     Debug.Print "インストール完了"
 End Sub
