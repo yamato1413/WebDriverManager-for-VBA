@@ -20,7 +20,7 @@ Private Declare  Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCach
 
 
 
-Private Property Get fso() 'As FileSystemObject
+Private Property Get fso() As FileSystemObject
     Static obj As Object
     If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
     Set fso = obj
@@ -137,7 +137,7 @@ End Function
 '// g—p—á Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip","C:\Users\yamato\Downloads\chromedriver_94.exe"
 Sub Extract(path_zip As String, path_save_to As String)
     Dim folder_temp
-    folder_temp = fso.GetParentFolderName(path_save_to) & "\" & fso.GetTempName
+    folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
     fso.CreateFolder folder_temp
     
     'Shell.Application‚ğg‚¤•û–@‚ÍMS”ñ„§‚ç‚µ‚¢‚Ì‚ÅPowerShell‚Å“WŠJ‚·‚é
@@ -153,7 +153,7 @@ Sub Extract(path_zip As String, path_save_to As String)
     Loop
     
     Dim path_exe_from As String, path_exe_to As String
-    path_exe_from = folder_temp & "\" & Dir(folder_temp & "\*.exe")
+    path_exe_from = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
     
     fso.MoveFile path_exe_from, path_save_to
     fso.DeleteFolder folder_temp
@@ -227,6 +227,9 @@ Sub CreateFolderEx(path_folder As String)
 End Sub
 
 
+
+'// TinySeleniumVBAê—p‚ÌŠÖ”‚Å‚·BSeleniumBasic‚Å‚Í“®‚«‚Ü‚¹‚ñB
+'//
 Sub SafeOpen(Driver As WebDriver, browser As BrowserName, Optional path_driver As String)
     If path_driver = "" Then path_driver = WebDriverPath(browser)
     
@@ -253,4 +256,3 @@ End Sub
 
 
 
-        ~             ­               @              6                                                               
