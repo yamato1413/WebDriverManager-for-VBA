@@ -1,4 +1,4 @@
-Attribute VB_Name = "WebDriverManager"
+Attribute VB_Name = "WebDriverManager4TinySelenium"
 Option Explicit
 
 Enum BrowserName
@@ -19,7 +19,6 @@ Private Declare  Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCach
 #End If
 
 
-
 Private Property Get fso() As FileSystemObject
     Static obj As Object
     If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
@@ -31,7 +30,10 @@ Private Property Get wsh() 'As WshShell
     Set wsh = obj
 End Property
 
-'// ダウンロードしたWebDriverのzipの保存場所
+
+
+
+'// ダウンロードしたWebDriverのzipのデフォルトパス
 Private Property Get ZipPath(browser As BrowserName) As String
     Select Case browser
         Case BrowserName.Chrome
@@ -45,11 +47,12 @@ Private Property Get ZipPath(browser As BrowserName) As String
 End Property
 
 
-'// WebDriverの実行ファイルの保存場所をレジストリに記録している。
-'// デフォルトはドキュメントフォルダ
+'// WebDriverの実行ファイルの保存場所をレジストリに記録している
+'// デフォルトはドキュメントフォルダ（SeleniumBasicがインストールされている場合は\AppData\Local\SeleniumBasic\）
 '// このパスを書き換えるプロシージャは以下の通り
-'// ・Property Let WebDriverPath
-'// ・InstallWebDriver
+'//     chromedriver.exe
+'//     Property Let WebDriverPath
+'//     InstallWebDriver
 Public Property Let WebDriverPath(browser As BrowserName, path_driver As String)
     Select Case browser
         Case BrowserName.Chrome: SaveSetting "WebDriverManager", "WebDriverPath", "Chrome", path_driver
@@ -65,7 +68,8 @@ End Property
 
 
 
-
+'// ブラウザのバージョンをレジストリから読み取る
+'// 出力例　"94.0.992.31"
 Public Property Get BrowserVersion(browser As BrowserName)
     Dim reg_version As String
     Select Case browser
@@ -79,16 +83,19 @@ Public Property Get BrowserVersion(browser As BrowserName)
     If version = "" Then Err.Raise 4000, , "バージョン情報が取得できませんでした"
     BrowserVersion = version
 End Property
+'// 出力例　"94"
 Public Property Get BrowserVersionToMajor(browser As BrowserName)
     Dim vers
     vers = Split(BrowserVersion(browser), ".")
     BrowserVersionToMajor = vers(0)
 End Property
+'// 出力例　"94.0"
 Public Property Get BrowserVersionToMinor(browser As BrowserName)
     Dim vers
     vers = Split(BrowserVersion(browser), ".")
     BrowserVersionToMinor = Join(Array(vers(0), vers(1)), ".")
 End Property
+'// 出力例　"94.0.992"
 Public Property Get BrowserVersionToBuild(browser As BrowserName)
     Dim vers
     vers = Split(BrowserVersion(browser), ".")
@@ -96,17 +103,24 @@ Public Property Get BrowserVersionToBuild(browser As BrowserName)
 End Property
 
 
-
+'// OSが64Bitかどうかを判定する
 Public Property Get Is64BitOS() As Boolean
     Dim arch As String
-    arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITECTURE")
+    arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITECTURE") '戻り値 "AMD64","IA64","x86"のいずれか
     Is64BitOS = CBool(InStr(arch, "64"))
 End Property
 
 
 
+
+'// 第3引数を省略すれば、ダウンロードフォルダにダウンロードされる
+'//     DownloadWebDriver Edge, "94.0.992.31"
+'//
+'// 第2引数にBrowserVersionプロパティを使えば、現在のブラウザに適合したWebDriverをダウンロードできる
+'//     DownloadWebDriver Edge, BrowserVersion(Edge)
+'//
 '// 第3引数にてパスを指定すれば任意の場所に任意の名前で保存できる。
-'// 使用例 DownloadWebDriver Edge, "94.0.992.31", "C:\Users\yamato\Desktop\edge.zip"
+'//     DownloadWebDriver Edge, "94.0.992.31", "C:\Users\yamato\Desktop\edgedriver_94.zip"
 Public Function DownloadWebDriver(browser As BrowserName, ver_webdriver As String, Optional path_save_to As String) As String
     Dim url As String
     Select Case browser
@@ -132,9 +146,11 @@ End Function
 
 
 '// zipから中身を取り出して指定の場所に実行ファイルを展開する
-'// chromedriver.exe(デフォルトの名前)があるところにchromedriver_94.exeとかで展開できるように、
+'// chromedriver.exe(デフォルトの名前)があるところにchromedriver_94.exeとかで展開できるよう、
 '// 元の実行ファイルを上書きしないように一度tempフォルダを作ってから実行ファイルを目的のパスへ移す
-'// 使用例 Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip","C:\Users\yamato\Downloads\chromedriver_94.exe"
+'// 普通zipを展開するときは展開先のフォルダを指定するが、この関数はWebDriverの実行ファイルのパスで指定するので注意！(展開するのもexeだけ)
+'// 使用例
+'//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
 Sub Extract(path_zip As String, path_save_to As String)
     Dim folder_temp
     folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
@@ -146,21 +162,29 @@ Sub Extract(path_zip As String, path_save_to As String)
     Set ex = wsh.Exec("powershell -NoLogo -ExecutionPolicy RemoteSigned -Command " & command)
     
     '// コマンド失敗時
-    If ex.Status = WshFailed Then: Err.Raise 4002, , "Zipの展開に失敗しました": Exit Sub
+    If ex.Status = WshFailed Then GoTo Catch
     
     Do While ex.Status = 0 'WshRunning
         DoEvents
     Loop
     
+    On Error GoTo Catch
     Dim path_exe_from As String, path_exe_to As String
     path_exe_from = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
     
     fso.MoveFile path_exe_from, path_save_to
     fso.DeleteFolder folder_temp
+    Exit Sub
+Catch:
+    fso.DeleteFolder folder_temp
+    Err.Raise 4002, , "Zipの展開に失敗しました"
 End Sub
 
 
-
+'// 基本的にはブラウザのバージョンと全く同じバージョンのWebDriverをダウンロードすればいいのだが、
+'// ChromeDriverはビルド番号までのバージョンを投げるとおすすめバージョンを教えてくれるらしい？
+'// よくわかんないけど、サイトにそう書いてあった。→　https://chromedriver.chromium.org/downloads/version-selection
+'// バグフィックスをリリースするから必ずしも一致するとは限らないとか。
 Function RequestWebDriverVersion(ver_chrome)
     Dim http 'As XMLHTTP60
     Dim url As String
@@ -179,7 +203,14 @@ Function RequestWebDriverVersion(ver_chrome)
 End Function
 
 
-
+'// 自動でブラウザのバージョンに一致するWebDriverをダウンロードし、zipを展開、WebDriverのexeを特定のフォルダに配置する
+'// デフォルトではC:\Users\USERNAME\Downloadsにダウンロードし、
+'// C:\Users\USERNAME\Documents\WebDriver\Chrome[Edge]\chromedriver.exe[msedgedriver.exe]に配置する
+'// 第2引数を指定すれば任意のフォルダ・ファイル名にしてインストールできる
+'// 指定したパスの途中のフォルダが存在しなくても、自動で作成する
+'// 使用例
+'//     InstallWebDriver Chrome, "C:\Users\USERNAME\Desktop\a\b\c\chromedriver_94.exe"
+'//     ↑デスクトップに\a\b\c\フォルダが作成されてその中にドライバが配置される
 Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
     Debug.Print "WebDriverをインストールします......"
     
@@ -216,7 +247,9 @@ End Sub
 
 
 
-'パスに含まれる全てのフォルダの存在確認をしてフォルダを作る関数
+'// パスに含まれる全てのフォルダの存在確認をしてフォルダを作る関数
+'// 使用例
+'// CreateFolderEx "C:\a\b\c\d\e\"
 Sub CreateFolderEx(path_folder As String)
     If fso.GetParentFolderName(path_folder) <> "" Then
         CreateFolderEx fso.GetParentFolderName(path_folder)
@@ -228,12 +261,15 @@ End Sub
 
 
 
-'// TinySeleniumVBA専用の関数です。SeleniumBasicでは動きません。
-'//
+'// TinySeleniumVBA専用の関数。メソッド名が異なるのでSeleniumBasicでは動かない(たぶん)。
+'// WebDriverの存在チェックをして無ければインストールする
+'// また、WebDriverが存在してもバージョン不一致でブラウザが開けなかった場合もWebDriverを再インストールする
+'// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
+'// バージョンアップや新規PCへの配布時に余計な操作がいらない
 Sub SafeOpen(Driver As WebDriver, browser As BrowserName, Optional path_driver As String)
     If path_driver = "" Then path_driver = WebDriverPath(browser)
     
-    If Not fso.FileExists(WebDriverPath(browser)) Then
+    If Not fso.FileExists(path_driver) Then
         Debug.Print "WebDriverが見つかりません"
         InstallWebDriver browser
     End If
@@ -243,12 +279,15 @@ Sub SafeOpen(Driver As WebDriver, browser As BrowserName, Optional path_driver A
         Case BrowserName.Edge:   Driver.Edge path_driver
     End Select
     
-    On Error GoTo ErrHandler
+    On Error GoTo Catch
+    Dim counter_try As Long
     Driver.OpenBrowser
     Exit Sub
     
-ErrHandler:
+Catch:
+    counter_try = counter_try + 1
     Driver.Shutdown
+    If counter_try > 1 Then Err.Raise 4004, , "ブラウザのオープンに失敗しました"
     InstallWebDriver browser
     Resume
 End Sub
