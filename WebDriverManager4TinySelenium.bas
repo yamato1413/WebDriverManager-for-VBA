@@ -208,7 +208,7 @@ End Function
 
 '// 自動でブラウザのバージョンに一致するWebDriverをダウンロードし、zipを展開、WebDriverのexeを特定のフォルダに配置する
 '// デフォルトではC:\Users\USERNAME\Downloadsにダウンロードし、
-'// C:\Users\USERNAME\Documents\WebDriver\Chrome[Edge]\chromedriver.exe[msedgedriver.exe]に配置する
+'// C:\Users\USERNAME\Documents\WebDriver\chromedriver.exe[edgedriver.exe]に配置する
 '// 第2引数を指定すれば任意のフォルダ・ファイル名にしてインストールできる
 '// 指定したパスの途中のフォルダが存在しなくても、自動で作成する
 '// 使用例
