@@ -244,9 +244,11 @@ End Sub
 '// 使用例
 '// CreateFolderEx "C:\a\b\c\d\e\"
 Sub CreateFolderEx(path_folder As String)
+    '// 親フォルダが遡れなくなるところまで再帰で辿る
     If fso.GetParentFolderName(path_folder) <> "" Then
         CreateFolderEx fso.GetParentFolderName(path_folder)
     End If
+    '// 途中の存在しないフォルダを作成しながら降りてくる
     If Not fso.FolderExists(path_folder) Then
         fso.CreateFolder path_folder
     End If
