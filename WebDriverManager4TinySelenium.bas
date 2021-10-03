@@ -152,10 +152,11 @@ End Function
 '// 使用例
 '//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
 Sub Extract(path_zip As String, path_save_to As String)
+    Debug.Print "zipを展開します"
     Dim folder_temp
     folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
     fso.CreateFolder folder_temp
-    
+    Debug.Print "    一時フォルダ : " & folder_temp
     'Shell.Applicationを使う方法はMS非推奨らしいのでPowerShellで展開する
     Dim command As String, ex As Object 'WshExec
     command = "Expand-Archive -Path " & path_zip & " -DestinationPath " & folder_temp & " -Force"
@@ -174,10 +175,12 @@ Sub Extract(path_zip As String, path_save_to As String)
     
     fso.MoveFile path_exe_from, path_save_to
     fso.DeleteFolder folder_temp
+    Debug.Print "    展開 : " & path_save_to
+    Debug.Print "WebDriverを配置しました"
     Exit Sub
 Catch:
     fso.DeleteFolder folder_temp
-    Err.Raise 4002, , "Zipの展開に失敗しました"
+    Err.Raise 4002, , "    Zipの展開に失敗しました"
 End Sub
 
 
