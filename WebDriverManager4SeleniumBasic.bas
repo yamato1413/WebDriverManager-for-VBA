@@ -173,7 +173,7 @@ Sub Extract(path_zip As String, path_save_to As String)
     Dim path_exe_from As String, path_exe_to As String
     path_exe_from = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
     
-    fso.MoveFile path_exe_from, path_save_to
+    fso.CopyFile path_exe_from, path_save_to, True
     fso.DeleteFolder folder_temp
     Debug.Print "    展開 : " & path_save_to
     Debug.Print "WebDriverを配置しました"
@@ -263,7 +263,31 @@ Sub CreateFolderEx(path_folder As String)
 End Sub
 
 
-
+'// WebDriverの存在チェックをして無ければインストールする
+'// また、WebDriverが存在してもバージョン不一致でブラウザが開けなかった場合もWebDriverを再インストールする
+'// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
+Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName, Optional path_driver As String)
+    If path_driver = "" Then path_driver = WebDriverPath(browser)
+    
+    If Not fso.FileExists(path_driver) Then
+        Debug.Print "WebDriverが見つかりません"
+        InstallWebDriver browser
+    End If
+    
+    On Error GoTo Catch
+    Dim counter_try As Long
+    Select Case browser
+        Case BrowserName.Chrome: Driver.Start "chrome"
+        Case BrowserName.Edge:   Driver.Start "edge"
+    End Select
+    Exit Sub
+    
+Catch:
+    counter_try = counter_try + 1
+    If counter_try > 1 Then Err.Raise 4004, , "ブラウザのオープンに失敗しました"
+    InstallWebDriver browser
+    Resume
+End Sub
 
 
 
