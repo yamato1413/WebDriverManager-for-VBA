@@ -48,7 +48,7 @@ End Property
 
 
 '// WebDriverの実行ファイルの保存場所をレジストリに記録している
-'// デフォルトはドキュメントフォルダ（SeleniumBasicがインストールされている場合は\AppData\Local\SeleniumBasic\）
+'// デフォルトは\AppData\Local\SeleniumBasic\
 '// このパスを書き換えるプロシージャは以下の通り
 '//     chromedriver.exe
 '//     Property Let WebDriverPath

@@ -48,7 +48,7 @@ End Property
 
 
 '// WebDriverの実行ファイルの保存場所をレジストリに記録している
-'// デフォルトはドキュメントフォルダ（SeleniumBasicがインストールされている場合は\AppData\Local\SeleniumBasic\）
+'// デフォルトはドキュメントフォルダ
 '// このパスを書き換えるプロシージャは以下の通り
 '//     chromedriver.exe
 '//     Property Let WebDriverPath
@@ -61,8 +61,8 @@ Public Property Let WebDriverPath(browser As BrowserName, path_driver As String)
 End Property
 Public Property Get WebDriverPath(browser As BrowserName) As String
     Select Case browser
-        Case BrowserName.Chrome: WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Chrome", "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\Chrome\chromedriver.exe")
-        Case BrowserName.Edge:   WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Edge", "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\Edge\msedgedriver.exe")
+        Case BrowserName.Chrome: WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Chrome", "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\chromedriver.exe")
+        Case BrowserName.Edge:   WebDriverPath = GetSetting("WebDriverManager", "WebDriverPath", "Edge", "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\edgedriver.exe")
     End Select
 End Property
 
