@@ -68,13 +68,15 @@ SeleniumBasic版
     C:\Users\USERNAME\AppData\Local\SeleniumBasic\edgedriver.exe[chromedriver.exe]
 ```
 
-最初の例で
+最初の例で以下のように書きました
 
 ```VB
 SafeOpen Edge, "path\to\edgedriver.exe" '// 第2引数は書かなくてもOK
 ```
 
-と書きましたが、実際には上記のパスを確認してWebDriverが存在しなければ勝手にインストールが始まるので、特にデフォルトのパスに異論がなければ
+WebDriverを保存する場所にこだわりがあるなら引数で指定してもいいですが，
+パスを省略した場合は上記のデフォルトパスを確認してWebDriverが存在しなければ自動でインストールを始めるので、
+特にデフォルトのパスに異論がなければ
 
 ```VB
 SafeOpen Driver, Edge
