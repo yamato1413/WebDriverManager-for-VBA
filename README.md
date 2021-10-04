@@ -81,7 +81,7 @@ SafeOpen Driver, Edge
 
 で十分です。
 
-##その他関数
+## その他関数
 WebDriverManager-for-VBAには```SafeOpen```以外にも```InstallWebDriver``` ```DownloadWebDriver``` 
  ```BrowserVersion```などの関数が用意されています。というか```SafeOpen```はこれらをラップしただけです。
 
