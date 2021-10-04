@@ -19,7 +19,7 @@ Private Declare  Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCach
 #End If
 
 
-Private Property Get fso() As FileSystemObject
+Private Property Get fso() 'As FileSystemObject
     Static obj As Object
     If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
     Set fso = obj
@@ -143,21 +143,20 @@ End Function
 '//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
 Sub Extract(path_zip As String, path_save_to As String)
     Debug.Print "zipを展開します"
+    
     Dim folder_temp
     folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
     fso.CreateFolder folder_temp
     Debug.Print "    一時フォルダ : " & folder_temp
-    'Shell.Applicationを使う方法はMS非推奨らしいのでPowerShellで展開する
-    Dim command As String, ex As Object 'WshExec
+    
+'    'Shell.Applicationを使う方法はMS非推奨らしいのでPowerShellで展開する
+    Dim command As String
+    Dim ret As Long
+    Const Hidden = 0
+    Const Failed = 0
     command = "Expand-Archive -Path " & path_zip & " -DestinationPath " & folder_temp & " -Force"
-    Set ex = wsh.Exec("powershell -NoLogo -ExecutionPolicy RemoteSigned -Command " & command)
-    
-    '// コマンド失敗時
-    If ex.Status = WshFailed Then GoTo Catch
-    
-    Do While ex.Status = 0 'WshRunning
-        DoEvents
-    Loop
+    ret = wsh.Run("powershell -NoLogo -ExecutionPolicy RemoteSigned -Command " & command, Hidden, True)
+    If ret = Failed Then GoTo Catch
     
     On Error GoTo Catch
     Dim path_exe_from As String, path_exe_to As String
