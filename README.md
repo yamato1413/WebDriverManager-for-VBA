@@ -5,14 +5,16 @@ TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、Selen
 ## SafeOpen関数
 ブラウザを開く処理を```SafeOpen```に書き換えることで、WebDriverのバージョンを一切気にする必要がなくなります。
 
-```VB:TinySeleniumVBA
+```VB
+'//TinySeleniumVBA
 Dim Driver As WebDriver
 Driver.Edge  "path\to\edgedriver.exe"
 Driver.OpenBrowser
 '   ↓
 SafeOpen Edge, "path\to\edgedriver.exe" '// 第2引数は書かなくてもOK
 ```
-```VB:SeleniumBasic
+```VB
+'// SeleniumBasic
 Dim Driver As Selenium.ChromeDriver
 Driver.Start 
 '   ↓
@@ -27,7 +29,8 @@ SafeOpen Chrome
 
 以下はSampleコードです。
 
-```VB:TinySeleniumVBA
+```VB
+'// TinySeleniumVBA
 Option Explicit
 
 Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
@@ -39,7 +42,8 @@ Public Sub Sample()
     Driver.ShutDown
 End Sub
 ```
-```VB:SeleniumBasic
+```VB
+'// SeleniumBasic
 Option Explicit
 
 Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
