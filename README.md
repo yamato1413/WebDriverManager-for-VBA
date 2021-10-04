@@ -2,7 +2,7 @@
 
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
 
-##SafeOpen関数
+## SafeOpen関数
 ブラウザを開く処理を```SafeOpen```に書き換えることで、WebDriverのバージョンを一切気にする必要がなくなります。
 
 ```VB:TinySeleniumVBA
@@ -52,7 +52,7 @@ Public Sub Sample()
 End Sub
 ```
 
-####補足
+#### 補足
 WebDriverの存在を確認すると書きましたが、実際にはどこを確認しているのか。
 デフォルトでは以下の場所を確認しています。
 
