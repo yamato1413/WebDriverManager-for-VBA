@@ -67,11 +67,12 @@ Public Property Get BrowserVersion(browser As BrowserName)
         Case BrowserName.Edge:   reg_version = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Edge\BLBeacon\version"
     End Select
     
-    Dim version As String
-    version = CreateObject("WScript.Shell").RegRead(reg_version)
+    On Error GoTo Catch
+    BrowserVersion = CreateObject("WScript.Shell").RegRead(reg_version)
+    Exit Property
     
-    If version = "" Then Err.Raise 4000, , "バージョン情報が取得できませんでした"
-    BrowserVersion = version
+Catch:
+    Err.Raise 4000, , "バージョン情報が取得できませんでした。ブラウザがインストールされていません。"
 End Property
 '// 出力例　"94"
 Public Property Get BrowserVersionToMajor(browser As BrowserName)
