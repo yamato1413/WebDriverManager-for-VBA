@@ -3,7 +3,9 @@
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
 SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
 gitが分かる人は
-```git clone github.com/yamato1413/WebDriverManager-for-VBA```
+```
+git clone github.com/yamato1413/WebDriverManager-for-VBA
+```
 でダウンロードしてもらえればいいですし，分からない人は右上の「CODE」という緑のボタンからZIPでダウンロードしてください。
 
 ## SafeOpen関数
