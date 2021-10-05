@@ -5,6 +5,7 @@
 修正したのでインポートし直してください。
 申し訳ありません。
 
+## インストール
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
 SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
 gitが分かる人は
