@@ -6,11 +6,14 @@
 申し訳ありません。
 
 ## インストール
+SeleniumBasic版がうまく動かないことが判明したので公開停止します
+
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
 
-~SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。~
+~SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basを~
 
-SeleniumBasic版がうまく動かないことが判明したので公開停止します
+インポートするだけです。
+
 
 gitが分かる人は
 ```
