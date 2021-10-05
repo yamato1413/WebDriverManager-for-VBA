@@ -1,5 +1,10 @@
 # WebDriverManager-for-VBA
 
+### 2021/10/5までにダウンロードされた方へ
+先日アップデートしたときにFailedとSuccessの条件を取り違えてしまったので，成功していてもエラー吐いて途中で止まってしまいます。
+修正したのでインポートし直してください。
+申し訳ありません。
+
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
 SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
 gitが分かる人は
