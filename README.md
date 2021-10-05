@@ -6,8 +6,15 @@
 申し訳ありません。
 
 ## インストール
+SeleniumBasic版がうまく動かないことが判明したので公開停止します
+
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
-SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
+
+~SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basを~
+
+インポートするだけです。
+
+
 gitが分かる人は
 ```
 git clone github.com/yamato1413/WebDriverManager-for-VBA
