@@ -182,8 +182,8 @@ Function RequestWebDriverVersion(ver_chrome)
     Dim http 'As XMLHTTP60
     Dim url As String
     
-    Set http = CreateObject("MSXML2.XMLHTTP")
-    url = "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_" & ver_chrome
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" & ver_chrome
     http.Open "GET", url, False
     http.send
     
