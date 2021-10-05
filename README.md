@@ -14,17 +14,17 @@ git clone github.com/yamato1413/WebDriverManager-for-VBA
 ```VB
 '//TinySeleniumVBA
 Dim Driver As WebDriver
-Driver.Edge  "path\to\edgedriver.exe"
+Driver.Edge "path\to\edgedriver.exe"
 Driver.OpenBrowser
 '   ↓
-SafeOpen Edge, "path\to\edgedriver.exe" '// 第2引数は書かなくてもOK
+SafeOpen Driver, Edge, "path\to\edgedriver.exe" '// 第3引数は書かなくてもOK
 ```
 ```VB
 '// SeleniumBasic
 Dim Driver As Selenium.ChromeDriver
 Driver.Start 
 '   ↓
-SafeOpen Chrome
+SafeOpen Driver, Chrome
 ```
 
 この```SafeOpen```は、ブラウザを開く前にWebDriverの存在を確認し、なければWebDriverのダウンロード・展開を開始します。
@@ -76,7 +76,7 @@ SeleniumBasic版
 最初の例で以下のように書きました
 
 ```VB
-SafeOpen Edge, "path\to\edgedriver.exe" '// 第2引数は書かなくてもOK
+SafeOpen Driver, Edge, "path\to\edgedriver.exe" '// 第3引数は書かなくてもOK
 ```
 
 WebDriverを保存する場所にこだわりがあるなら引数で指定してもいいですが，
