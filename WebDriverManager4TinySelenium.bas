@@ -154,10 +154,10 @@ Sub Extract(path_zip As String, path_save_to As String)
     Dim command As String
     Dim ret As Long
     Const Hidden = 0
-    Const Failed = 0
+    Const Success = 0
     command = "Expand-Archive -Path " & path_zip & " -DestinationPath " & folder_temp & " -Force"
     ret = wsh.Run("powershell -NoLogo -ExecutionPolicy RemoteSigned -Command " & command, Hidden, True)
-    If ret = Failed Then GoTo Catch
+    If ret <> Success Then GoTo Catch
     
     On Error GoTo Catch
     Dim path_exe_from As String, path_exe_to As String
