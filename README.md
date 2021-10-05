@@ -2,6 +2,9 @@
 
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
 SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basをインポートするだけです。
+gitが分かる人は
+```git clone github.com/yamato1413/WebDriverManager-for-VBA```
+でダウンロードしてもらえればいいですし，分からない人は右上の「CODE」という緑のボタンからZIPでダウンロードしてください。
 
 ## SafeOpen関数
 ブラウザを開く処理を```SafeOpen```に書き換えることで、WebDriverのバージョンを一切気にする必要がなくなります。
