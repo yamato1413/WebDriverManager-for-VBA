@@ -266,7 +266,7 @@ Sub SafeOpen(Driver As WebDriver, browser As BrowserName, Optional path_driver A
     
     If Not fso.FileExists(path_driver) Then
         Debug.Print "WebDriverが見つかりません"
-        InstallWebDriver browser
+        InstallWebDriver browser, path_driver
     End If
     
     Select Case browser
@@ -283,7 +283,7 @@ Catch:
     counter_try = counter_try + 1
     Driver.Shutdown
     If counter_try > 1 Then Err.Raise 4004, , "ブラウザのオープンに失敗しました"
-    InstallWebDriver browser
+    InstallWebDriver browser, path_driver
     Resume
 End Sub
 
