@@ -2,16 +2,14 @@
 
 ### 2021/10/5までにダウンロードされた方へ
 先日アップデートしたときにFailedとSuccessの条件を取り違えてしまったので，成功していてもエラー吐いて途中で止まってしまいます。
+また、SeleniumBasic版はWebDriverの更新に失敗してしまう状態になっていました。
 修正したのでインポートし直してください。
 申し訳ありません。
 
 ## インストール
-SeleniumBasic版がうまく動かないことが判明したので公開停止します
 
 TinySeleniumVBAを使ってる人はWebDriverManager4TinySelenium.basを、
-
-~SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basを~
-
+SeleniumBasicを使っている人はWebDriverManager4SeleniumBasic.basを
 インポートするだけです。
 
 
