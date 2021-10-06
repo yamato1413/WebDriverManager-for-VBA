@@ -142,7 +142,7 @@ End Function
 '// 普通zipを展開するときは展開先のフォルダを指定するが、この関数はWebDriverの実行ファイルのパスで指定するので注意！(展開するのもexeだけ)
 '// 使用例
 '//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
-Sub Extract(path_zip As String, path_save_to As String)
+Public Sub Extract(path_zip As String, path_save_to As String)
     Debug.Print "zipを展開します"
     
     Dim folder_temp
@@ -179,7 +179,7 @@ End Sub
 '// ChromeDriverはビルド番号までのバージョンを投げるとおすすめバージョンを教えてくれるらしい？
 '// よくわかんないけど、サイトにそう書いてあった。→　https://chromedriver.chromium.org/downloads/version-selection
 '// バグフィックスをリリースするから必ずしも一致するとは限らないとか。
-Function RequestWebDriverVersion(ver_chrome)
+Public Function RequestWebDriverVersion(ver_chrome)
     Dim http 'As XMLHTTP60
     Dim url As String
     
@@ -205,7 +205,7 @@ End Function
 '// 使用例
 '//     InstallWebDriver Chrome, "C:\Users\USERNAME\Desktop\a\b\c\chromedriver_94.exe"
 '//     ↑デスクトップに\a\b\c\フォルダが作成されてその中にドライバが配置される
-Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
+Public Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
     Debug.Print "WebDriverをインストールします......"
     
     Dim ver_browser   As String
@@ -244,7 +244,7 @@ End Sub
 '// パスに含まれる全てのフォルダの存在確認をしてフォルダを作る関数
 '// 使用例
 '// CreateFolderEx "C:\a\b\c\d\e\"
-Sub CreateFolderEx(path_folder As String)
+Public Sub CreateFolderEx(path_folder As String)
     '// 親フォルダが遡れなくなるところまで再帰で辿る
     If fso.GetParentFolderName(path_folder) <> "" Then
         CreateFolderEx fso.GetParentFolderName(path_folder)
@@ -256,20 +256,21 @@ Sub CreateFolderEx(path_folder As String)
 End Sub
 
 
-'// 強制的に毎回WebDriverを置き換えます。
-'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、
-'// 強引ですが毎回削除してからインストールします
+'// 強制的に毎回WebDriverを置き換える
+'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だがが毎回インストールする
 '// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
-Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
-    
-    Dim folder_temp
-    folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
-    fso.CreateFolder folder_temp
-    fso.MoveFile WebDriverPath(browser), folder_temp & "webdriver.exe"
-    
+Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     On Error GoTo Catch
-    InstallWebDriver browser
-    Dim counter_try As Long
+    If IsOnline Then
+        If fso.Exists(WebDriverPath(browser)) Then
+            Dim folder_temp As String
+            folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
+            fso.CreateFolder folder_temp
+            fso.MoveFile WebDriverPath(browser), folder_temp & "webdriver.exe"
+        End If
+        InstallWebDriver browser
+    End If
+    
     Select Case browser
         Case BrowserName.Chrome: Driver.Start "chrome"
         Case BrowserName.Edge:   Driver.Start "edge"
@@ -278,11 +279,28 @@ Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     Exit Sub
     
 Catch:
-    fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
-    fso.DeleteFolder folder_temp
+    If fso.Exists(folder_temp & "webdriver.exe") Then
+        fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
+        fso.DeleteFolder folder_temp
+    End If
     Err.Raise 4004, , "ブラウザのオープンに失敗しました"
-    Resume
 End Sub
 
 
 
+'// PCがオンラインかどうかを判定する
+'// リクエスト先がgooglなのは障害でページが開けないということは少なそうなので
+Public Function IsOnline() As Boolean
+    Dim http
+    Dim url As String
+    On Error Resume Next
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    url = "https://www.google.co.jp/"
+    http.Open "GET", url, False
+    http.send
+    
+    Select Case http.statusText
+        Case "OK": IsOnline = True
+        Case Else: IsOnline = False
+    End Select
+End Function
