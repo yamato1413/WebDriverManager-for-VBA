@@ -34,7 +34,7 @@ End Property
 
 
 '// ダウンロードしたWebDriverのzipのデフォルトパス
-Private Property Get ZipPath(browser As BrowserName) As String
+Public Property Get ZipPath(browser As BrowserName) As String
     Select Case browser
         Case BrowserName.Chrome
             ZipPath = "C:" & Environ("HOMEPATH") & "\Downloads\chromedriver_win32.zip"
@@ -256,36 +256,55 @@ End Sub
 
 
 
-'// TinySeleniumVBA専用の関数。メソッド名が異なるのでSeleniumBasicでは動かない(たぶん)。
-'// WebDriverの存在チェックをして無ければインストールする
-'// また、WebDriverが存在してもバージョン不一致でブラウザが開けなかった場合もWebDriverを再インストールする
+'// 強制的に毎回WebDriverを置き換える
+'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だがが毎回インストールする
 '// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
 '// バージョンアップや新規PCへの配布時に余計な操作がいらない
-Sub SafeOpen(Driver As WebDriver, browser As BrowserName, Optional path_driver As String)
-    If path_driver = "" Then path_driver = WebDriverPath(browser)
-    
-    If Not fso.FileExists(path_driver) Then
-        Debug.Print "WebDriverが見つかりません"
-        InstallWebDriver browser, path_driver
+Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
+    On Error GoTo Catch
+    If IsOnline Then
+        If fso.Exists(WebDriverPath(browser)) Then
+            Dim folder_temp As String
+            folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
+            fso.CreateFolder folder_temp
+            fso.MoveFile WebDriverPath(browser), folder_temp & "webdriver.exe"
+        End If
+        InstallWebDriver browser
     End If
     
     Select Case browser
-        Case BrowserName.Chrome: Driver.Chrome path_driver
-        Case BrowserName.Edge:   Driver.Edge path_driver
+        Case BrowserName.Chrome: Driver.Start "chrome"
+        Case BrowserName.Edge:   Driver.Start "edge"
     End Select
-    
-    On Error GoTo Catch
-    Dim counter_try As Long
-    Driver.OpenBrowser
+    fso.DeleteFolder folder_temp
     Exit Sub
     
 Catch:
-    counter_try = counter_try + 1
-    Driver.Shutdown
-    If counter_try > 1 Then Err.Raise 4004, , "ブラウザのオープンに失敗しました"
-    InstallWebDriver browser, path_driver
-    Resume
+    If fso.Exists(folder_temp & "webdriver.exe") Then
+        fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
+        fso.DeleteFolder folder_temp
+    End If
+    Err.Raise 4004, , "ブラウザのオープンに失敗しました"
 End Sub
+
+
+
+'// PCがオンラインかどうかを判定する
+'// リクエスト先がgooglなのは障害でページが開けないということは少なそうなので
+Public Function IsOnline() As Boolean
+    Dim http
+    Dim url As String
+    On Error Resume Next
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    url = "https://www.google.co.jp/"
+    http.Open "GET", url, False
+    http.send
+    
+    Select Case http.statusText
+        Case "OK": IsOnline = True
+        Case Else: IsOnline = False
+    End Select
+End Function
 
 
 

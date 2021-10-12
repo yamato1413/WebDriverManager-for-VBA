@@ -34,7 +34,7 @@ End Property
 
 
 '// ダウンロードしたWebDriverのzipのデフォルトパス
-Private Property Get ZipPath(browser As BrowserName) As String
+Public Property Get ZipPath(browser As BrowserName) As String
     Select Case browser
         Case BrowserName.Chrome
             ZipPath = "C:" & Environ("HOMEPATH") & "\Downloads\chromedriver_win32.zip"
