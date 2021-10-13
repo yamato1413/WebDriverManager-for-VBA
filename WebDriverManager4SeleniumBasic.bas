@@ -262,7 +262,7 @@ End Sub
 Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     On Error GoTo Catch
     If IsOnline Then
-        If fso.Exists(WebDriverPath(browser)) Then
+        If fso.FileExists(WebDriverPath(browser)) Then
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
@@ -271,15 +271,16 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
         InstallWebDriver browser
     End If
     
+    
     Select Case browser
         Case BrowserName.Chrome: Driver.Start "chrome"
         Case BrowserName.Edge:   Driver.Start "edge"
     End Select
-    fso.DeleteFolder folder_temp
+    If fso.FolderExists(folder_temp) Then fso.DeleteFolder folder_temp
     Exit Sub
     
 Catch:
-    If fso.Exists(folder_temp & "webdriver.exe") Then
+    If fso.FileExists(folder_temp & "webdriver.exe") Then
         fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
         fso.DeleteFolder folder_temp
     End If

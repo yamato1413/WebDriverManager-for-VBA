@@ -260,10 +260,10 @@ End Sub
 '// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だがが毎回インストールする
 '// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
 '// バージョンアップや新規PCへの配布時に余計な操作がいらない
-Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
+Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     On Error GoTo Catch
     If IsOnline Then
-        If fso.Exists(WebDriverPath(browser)) Then
+        If fso.FileExists(WebDriverPath(browser)) Then
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
@@ -273,14 +273,15 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     End If
     
     Select Case browser
-        Case BrowserName.Chrome: Driver.Start "chrome"
-        Case BrowserName.Edge:   Driver.Start "edge"
+        Case BrowserName.Chrome: Driver.Chrome WebDriverPath(browser)
+        Case BrowserName.Edge:   Driver.Edge WebDriverPath(browser)
     End Select
-    fso.DeleteFolder folder_temp
+    Driver.OpenBrowser
+    If fso.FolderExists(folder_temp) Then fso.DeleteFolder folder_temp
     Exit Sub
     
 Catch:
-    If fso.Exists(folder_temp & "webdriver.exe") Then
+    If fso.FileExists(folder_temp & "webdriver.exe") Then
         fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
         fso.DeleteFolder folder_temp
     End If
