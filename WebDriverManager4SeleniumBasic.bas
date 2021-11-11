@@ -48,7 +48,7 @@ End Property
 
 
 '// WebDriverの実行ファイルの保存場所
-'// デフォルトは\AppData\Local\SeleniumBasic\
+
 Public Property Get WebDriverPath(browser As BrowserName) As String
     Select Case browser
         Case BrowserName.Chrome: WebDriverPath = "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\chromedriver.exe"
@@ -269,7 +269,7 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
-            fso.MoveFile WebDriverPath(browser), folder_temp & "webdriver.exe"
+            fso.MoveFile WebDriverPath(browser), folder_temp & "\webdriver.exe"
         End If
         InstallWebDriver browser
     End If

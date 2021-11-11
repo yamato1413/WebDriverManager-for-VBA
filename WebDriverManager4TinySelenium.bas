@@ -150,23 +150,22 @@ Sub Extract(path_zip As String, path_save_to As String)
     folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
     fso.CreateFolder folder_temp
     Debug.Print "    一時フォルダ : " & folder_temp
-    
+
     'PowerShellを使って展開するとマルウェア判定されたので，
     'MS非推奨だがShell.Applicationを使ってzipを解凍する
-    
     On Error GoTo Catch
     Dim sh As Object
     Set sh = CreateObject("Shell.Application")
     'zipファイルに入っているファイルを指定したフォルダーにコピーする
     '文字列を一度()で評価してからNamespaceに渡さないとエラーが出る
     sh.Namespace((folder_temp)).CopyHere sh.Namespace((path_zip)).Items
-    
+
     Dim path_exe As String
     path_exe = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
     
     If fso.FileExists(path_save_to) Then fso.DeleteFile path_save_to
     fso.CopyFile path_exe, path_save_to, True
-    
+
     fso.DeleteFolder folder_temp
     Debug.Print "    展開 : " & path_save_to
     Debug.Print "WebDriverを配置しました"
@@ -272,7 +271,7 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
-            fso.MoveFile WebDriverPath(browser), folder_temp & "webdriver.exe"
+            fso.MoveFile WebDriverPath(browser), folder_temp & "\webdriver.exe"
         End If
         InstallWebDriver browser
     End If
