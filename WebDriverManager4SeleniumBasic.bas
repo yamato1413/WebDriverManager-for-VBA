@@ -13,9 +13,9 @@ Private Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias "URLDownlo
     (ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
 Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
 #Else
-Private Declare  Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
+Private Declare Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
     (ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
-Private Declare  Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
+Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
 #End If
 
 
@@ -142,7 +142,7 @@ End Function
 '// 普通zipを展開するときは展開先のフォルダを指定するが、この関数はWebDriverの実行ファイルのパスで指定するので注意！(展開するのもexeだけ)
 '// 使用例
 '//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
-Public Sub Extract(path_zip As String, path_save_to As String)
+Sub Extract(path_zip As String, path_save_to As String)
     Debug.Print "zipを展開します"
     
     Dim folder_temp
@@ -150,28 +150,31 @@ Public Sub Extract(path_zip As String, path_save_to As String)
     fso.CreateFolder folder_temp
     Debug.Print "    一時フォルダ : " & folder_temp
     
-    
-'    'Shell.Applicationを使う方法はMS非推奨らしいのでPowerShellで展開する
-    Dim command As String
-    Dim ret As Long
-    Const Hidden = 0
-    Const Success = 0
-    command = "Expand-Archive -Path " & path_zip & " -DestinationPath " & folder_temp & " -Force"
-    ret = wsh.Run("powershell -NoLogo -ExecutionPolicy RemoteSigned -Command " & command, Hidden, True)
-    If ret <> Success Then GoTo Catch
+    'PowerShellを使って展開するとマルウェア判定されたので，
+    'MS非推奨だがShell.Applicationを使ってzipを解凍する
     
     On Error GoTo Catch
-    Dim path_exe_from As String, path_exe_to As String
-    path_exe_from = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
-
-    fso.CopyFile path_exe_from, path_save_to, True
+    Dim sh As Object
+    Set sh = CreateObject("Shell.Application")
+    'zipファイルに入っているファイルを指定したフォルダーにコピーする
+    '文字列を一度()で評価してからNamespaceに渡さないとエラーが出る
+    sh.Namespace((folder_temp)).CopyHere sh.Namespace((path_zip)).Items
+    
+    Dim path_exe As String
+    path_exe = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
+    
+    If fso.FileExists(path_save_to) Then fso.DeleteFile path_save_to
+    fso.CopyFile path_exe, path_save_to, True
+    
     fso.DeleteFolder folder_temp
     Debug.Print "    展開 : " & path_save_to
     Debug.Print "WebDriverを配置しました"
     Exit Sub
+    
 Catch:
     fso.DeleteFolder folder_temp
-    Err.Raise 4002, , "Zipの展開に失敗しました"
+    Err.Raise 4002, , "    Zipの展開に失敗しました。"
+    Exit Sub
 End Sub
 
 
