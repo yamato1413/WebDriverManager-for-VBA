@@ -261,7 +261,7 @@ End Sub
 
 
 '// 強制的に毎回WebDriverを置き換える
-'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だがが毎回インストールする
+'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だが毎回インストールする
 '// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
 '// バージョンアップや新規PCへの配布時に余計な操作がいらない
 Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
@@ -285,11 +285,15 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     Exit Sub
     
 Catch:
-    If fso.FileExists(folder_temp & "webdriver.exe") Then
-        fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
+    If fso.FileExists(folder_temp & "\webdriver.exe") Then
+        fso.Copy folder_temp & "\webdriver.exe", WebDriverPath(browser), True
         fso.DeleteFolder folder_temp
     End If
-    Err.Raise 4004, , "ブラウザのオープンに失敗しました"
+    If IsOnline Then
+        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
+    Else
+        Err.Raise 4005, , "オフラインのため更新できません。インターネットに接続してください。"
+    End If
 End Sub
 
 

@@ -283,11 +283,15 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     Exit Sub
     
 Catch:
-    If fso.FileExists(folder_temp & "webdriver.exe") Then
-        fso.MoveFile folder_temp & "webdriver.exe", WebDriverPath(browser)
+    If fso.FileExists(folder_temp & "\webdriver.exe") Then
+        fso.CopyFile folder_temp & "\webdriver.exe", WebDriverPath(browser), True
         fso.DeleteFolder folder_temp
     End If
-    Err.Raise 4004, , "ブラウザのオープンに失敗しました"
+    If IsOnline Then
+        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
+    Else
+        Err.Raise 4005, , "オフラインのため更新できません。インターネットに接続してください。"
+    End If
 End Sub
 
 
