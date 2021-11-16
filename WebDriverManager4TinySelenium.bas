@@ -286,7 +286,7 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     
 Catch:
     If fso.FileExists(folder_temp & "\webdriver.exe") Then
-        fso.Copy folder_temp & "\webdriver.exe", WebDriverPath(browser), True
+        fso.CopyFile folder_temp & "\webdriver.exe", WebDriverPath(browser), True
         fso.DeleteFolder folder_temp
     End If
     If IsOnline Then
