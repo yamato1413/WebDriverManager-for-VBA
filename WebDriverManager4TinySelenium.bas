@@ -173,7 +173,7 @@ Sub Extract(path_zip As String, path_save_to As String)
     
 Catch:
     fso.DeleteFolder folder_temp
-    Err.Raise 4002, , "    Zipの展開に失敗しました。"
+    Err.Raise 4002, , "Zipの展開に失敗しました。原因：" & Err.Description
     Exit Sub
 End Sub
 
@@ -290,7 +290,7 @@ Catch:
         fso.DeleteFolder folder_temp
     End If
     If IsOnline Then
-        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
+        Err.Raise 4004, , "ブラウザのオープンに失敗しました。原因：" & Err.Description
     Else
         Err.Raise 4005, , "オフラインのため更新できません。インターネットに接続してください。"
     End If
