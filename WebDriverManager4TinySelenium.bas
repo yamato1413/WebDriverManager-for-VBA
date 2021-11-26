@@ -19,15 +19,10 @@ Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCache
 #End If
 
 
-Private Property Get fso() As FileSystemObject
+Private Property Get fso() 'As FileSystemObject
     Static obj As Object
     If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
     Set fso = obj
-End Property
-Private Property Get wsh() 'As WshShell
-    Static obj As Object
-    If obj Is Nothing Then Set obj = CreateObject("WScript.Shell")
-    Set wsh = obj
 End Property
 
 
@@ -271,7 +266,7 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
-            fso.MoveFile WebDriverPath(browser), folder_temp & "\webdriver.exe"
+            fso.MoveFile WebDriverPath(browser), fso.BuildPath(folder_temp, "\webdriver.exe")
         End If
         InstallWebDriver browser
     End If
@@ -285,8 +280,8 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     Exit Sub
     
 Catch:
-    If fso.FileExists(folder_temp & "\webdriver.exe") Then
-        fso.CopyFile folder_temp & "\webdriver.exe", WebDriverPath(browser), True
+    If fso.FileExists(fso.BuildPath(folder_temp, "\webdriver.exe")) Then
+        fso.CopyFile fso.BuildPath(folder_temp, "\webdriver.exe"), WebDriverPath(browser), True
         fso.DeleteFolder folder_temp
     End If
     If IsOnline Then

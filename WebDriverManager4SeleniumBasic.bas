@@ -24,11 +24,6 @@ Private Property Get fso() 'As FileSystemObject
     If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
     Set fso = obj
 End Property
-Private Property Get wsh() 'As WshShell
-    Static obj As Object
-    If obj Is Nothing Then Set obj = CreateObject("WScript.Shell")
-    Set wsh = obj
-End Property
 
 
 
@@ -173,7 +168,7 @@ Sub Extract(path_zip As String, path_save_to As String)
     
 Catch:
     fso.DeleteFolder folder_temp
-    Err.Raise 4002, , "ZipÇÃìWäJÇ…é∏îsÇµÇ‹ÇµÇΩÅBå¥àˆÅF" & Err.Description 
+    Err.Raise 4002, , "ZipÇÃìWäJÇ…é∏îsÇµÇ‹ÇµÇΩÅBå¥àˆÅF" & Err.Description
     Exit Sub
 End Sub
 
@@ -269,7 +264,7 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
             fso.CreateFolder folder_temp
-            fso.MoveFile WebDriverPath(browser), folder_temp & "\webdriver.exe"
+            fso.MoveFile WebDriverPath(browser), fso.BuildPath(folder_temp, "\webdriver.exe")
         End If
         InstallWebDriver browser
     End If
@@ -283,8 +278,8 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
     Exit Sub
     
 Catch:
-    If fso.FileExists(folder_temp & "\webdriver.exe") Then
-        fso.CopyFile folder_temp & "\webdriver.exe", WebDriverPath(browser), True
+    If fso.FileExists(fso.BuildPath(folder_temp, "\webdriver.exe")) Then
+        fso.CopyFile fso.BuildPath(folder_temp, "\webdriver.exe"), WebDriverPath(browser), True
         fso.DeleteFolder folder_temp
     End If
     If IsOnline Then
