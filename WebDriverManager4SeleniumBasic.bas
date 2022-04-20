@@ -92,8 +92,11 @@ End Property
 '// OSが64Bitかどうかを判定する
 Public Property Get Is64BitOS() As Boolean
     Dim arch As String
-    arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITECTURE") '戻り値 "AMD64","IA64","x86"のいずれか
-    Is64BitOS = CBool(InStr(arch, "64"))
+    '戻り値 "AMD64","IA64","x86"のいずれか
+    arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITECTURE")
+    '64bitOSで32bitOfficeを実行している場合、PROCESSOR_ARCHITEW6432に本来のOSのbit数が退避されているので確認
+    If InStr(arch, "64") = 0 Then arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITEW6432")
+    Is64BitOS = InStr(arch, "64")
 End Property
 
 
@@ -254,12 +257,30 @@ Public Sub CreateFolderEx(path_folder As String)
 End Sub
 
 
-'// 強制的に毎回WebDriverを置き換える
-'// 一度ブラウザのStartに失敗するとWebDriverが終了できずファイルの置き換えができなかったので、強引だがが毎回インストールする
+
 '// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
 Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
-    On Error GoTo Catch
-    If IsOnline Then
+    Dim try As Long
+    try = 1
+    Do
+        On Error Resume Next
+        Select Case browser
+            Case BrowserName.Chrome: Driver.Start "chrome"
+            Case BrowserName.Edge: Driver.Start "edge"
+        End Select
+        
+        Dim OK As Boolean
+        If Err.Description <> "" Then OK = False Else OK = True
+        On Error GoTo 0
+        
+        If OK Then Exit Do
+        
+        On Error Resume Next
+        Driver.Quit
+        On Error GoTo 0
+        
+        If Not IsOnline Or try > 1 Then GoTo Catch
+        
         If fso.FileExists(WebDriverPath(browser)) Then
             Dim folder_temp As String
             folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
@@ -267,13 +288,10 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, browser As BrowserName)
             fso.MoveFile WebDriverPath(browser), fso.BuildPath(folder_temp, "\webdriver.exe")
         End If
         InstallWebDriver browser
-    End If
+        
+        try = try + 1
+    Loop
     
-    
-    Select Case browser
-        Case BrowserName.Chrome: Driver.Start "chrome"
-        Case BrowserName.Edge:   Driver.Start "edge"
-    End Select
     If fso.FolderExists(folder_temp) Then fso.DeleteFolder folder_temp
     Exit Sub
     
@@ -305,5 +323,32 @@ Public Function IsOnline() As Boolean
     Select Case http.statusText
         Case "OK": IsOnline = True
         Case Else: IsOnline = False
+    End Select
+End Function
+
+
+'// ドライバーのバージョンを調べる
+Function DriverVersion(browser As BrowserName) As String
+    Select Case browser
+        Case Chrome: DriverVersion = GetSetting("WDM4Tiny", "DriverVersion", "Chrome", "")
+        Case Edge:   DriverVersion = GetSetting("WDM4Tiny", "DriverVersion", "Edge", "")
+    End Select
+End Function
+
+'// 最新のドライバーがインストールされているか調べる
+Function IsLatestDriver(browser As BrowserName) As Boolean
+    Select Case browser
+    Case BrowserName.Edge
+        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(Edge)
+    
+    '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
+    Case BrowserName.Chrome
+        Dim dv As String
+        dv = DriverVersion(Chrome)
+        If dv = "" Then IsLatestDriver = False: Exit Function
+        Dim buf
+        buf = Split(dv, ".")
+        dv = Join(Array(buf(0), buf(1), buf(2)), ".")
+        IsLatestDriver = BrowserVersionToMinor(Chrome) = dv
     End Select
 End Function
