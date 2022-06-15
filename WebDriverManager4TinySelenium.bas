@@ -289,7 +289,7 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     On Error GoTo 0
     
     If OK Then
-        If driver_temp <> "" Then DeleteTempDriver (driver_temp)
+        If driver_temp <> "" Then Call DeleteTempDriver(driver_temp)
     Else
         If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
         Err.Raise err_number, , err_desc
