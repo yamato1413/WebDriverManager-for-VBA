@@ -30,13 +30,15 @@ End Property
 
 '// ダウンロードしたWebDriverのzipのデフォルトパス
 Public Property Get ZipPath(browser As BrowserName) As String
+    Dim path_download As String
+    path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").Self.path
     Select Case browser
         Case BrowserName.Chrome
-            ZipPath = "C:" & Environ("HOMEPATH") & "\Downloads\chromedriver_win32.zip"
+            ZipPath = path_download & "\chromedriver_win32.zip"
         Case BrowserName.Edge
             Select Case Is64BitOS
-                Case True: ZipPath = "C:" & Environ("HOMEPATH") & "\Downloads\edgedriver_win64.zip"
-                Case Else: ZipPath = "C:" & Environ("HOMEPATH") & "\Downloads\edgedriver_win32.zip"
+                Case True: ZipPath = path_download & "\edgedriver_win64.zip"
+                Case Else: ZipPath = path_download & "\edgedriver_win32.zip"
             End Select
     End Select
 End Property
