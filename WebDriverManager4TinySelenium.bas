@@ -282,15 +282,20 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
 
     On Error Resume Next
     Driver.OpenBrowser
+    
     Dim OK As Boolean: OK = Err.Number = 0
+    Dim err_number As Long: err_number = Err.Number
+    Dim err_desc As String: err_desc = Err.Description
     On Error GoTo 0
     
     If OK Then
         If driver_temp <> "" Then DeleteTempDriver (driver_temp)
     Else
-       If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
-        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
+        If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
+        Err.Raise err_number, , err_desc
     End If
+    
+    
 
 End Sub
 
