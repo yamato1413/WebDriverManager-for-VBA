@@ -47,9 +47,11 @@ End Property
 '// WebDriverの実行ファイルの保存場所
 '// デフォルトはドキュメントフォルダ
 Public Property Get WebDriverPath(browser As BrowserName) As String
+    Dim path_document As String
+    path_document = CreateObject("Shell.Application").Namespace("shell:Personal").Self.path
     Select Case browser
-        Case BrowserName.Chrome: WebDriverPath = "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\chromedriver.exe"
-        Case BrowserName.Edge:   WebDriverPath = "C:" & Environ("HOMEPATH") & "\Documents\WebDriver\edgedriver.exe"
+        Case BrowserName.Chrome: WebDriverPath = path_document & "\WebDriver\chromedriver.exe"
+        Case BrowserName.Edge:   WebDriverPath = path_document & "\WebDriver\edgedriver.exe"
     End Select
 End Property
 
