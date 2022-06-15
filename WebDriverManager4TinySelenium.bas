@@ -33,19 +33,18 @@ Public Property Get ZipPath(browser As BrowserName) As String
     Dim path_download As String
     path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").Self.path
     Select Case browser
-        Case BrowserName.Chrome
-            ZipPath = path_download & "\chromedriver_win32.zip"
-        Case BrowserName.Edge
-            Select Case Is64BitOS
-                Case True: ZipPath = path_download & "\edgedriver_win64.zip"
-                Case Else: ZipPath = path_download & "\edgedriver_win32.zip"
-            End Select
+    Case BrowserName.Chrome
+        ZipPath = path_download & "\chromedriver_win32.zip"
+    Case BrowserName.Edge
+        Select Case Is64BitOS
+            Case True: ZipPath = path_download & "\edgedriver_win64.zip"
+            Case Else: ZipPath = path_download & "\edgedriver_win32.zip"
+        End Select
     End Select
 End Property
 
 
-'// WebDriverの実行ファイルの保存場所
-'// デフォルトはドキュメントフォルダ
+'// WebDriverの実行ファイルの保存場所（ドキュメントフォルダ）
 Public Property Get WebDriverPath(browser As BrowserName) As String
     Dim path_document As String
     path_document = CreateObject("Shell.Application").Namespace("shell:Personal").Self.path
@@ -71,7 +70,7 @@ Public Property Get BrowserVersion(browser As BrowserName)
     Exit Property
     
 Catch:
-    Err.Raise 4000, , "バージョン情報が取得できませんでした。ブラウザがインストールされていません。"
+    Err.Raise 4000, , "バージョン情報が取得できませんでした。ブラウザがインストールされていないか、一度も起動されたことがありません。"
 End Property
 '// 出力例　"94"
 Public Property Get BrowserVersionToMajor(browser As BrowserName)
@@ -117,13 +116,13 @@ End Property
 Public Function DownloadWebDriver(browser As BrowserName, ver_webdriver As String, Optional path_save_to As String) As String
     Dim url As String
     Select Case browser
-        Case BrowserName.Chrome
-            url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", ver_webdriver)
-        Case BrowserName.Edge
-            Select Case Is64BitOS
-                Case True: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win64.zip", "{version}", ver_webdriver)
-                Case Else: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip", "{version}", ver_webdriver)
-            End Select
+    Case BrowserName.Chrome
+        url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", ver_webdriver)
+    Case BrowserName.Edge
+        Select Case Is64BitOS
+            Case True: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win64.zip", "{version}", ver_webdriver)
+            Case Else: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip", "{version}", ver_webdriver)
+        End Select
     End Select
     
     If path_save_to = "" Then path_save_to = ZipPath(browser)   'デフォは"C:Users\USERNAME\Downloads\~~~.zip"
@@ -332,3 +331,25 @@ Public Function IsOnline() As Boolean
     End Select
 End Function
 
+'// ドライバーのバージョンを調べる
+Function DriverVersion(browser As BrowserName) As String
+    Dim ret As String
+    ret = CreateObject("WScript.Shell").Exec(WebDriverPath(browser) & " -version").StdOut.ReadLine
+    Dim reg
+    Set reg = CreateObject("VBScript.RegExp")
+    reg.Pattern = "\d+\.\d+\.\d+\.\d+"
+    DriverVersion = reg.Execute(ret)(0).value
+End Function
+
+'// 最新のドライバーがインストールされているか調べる
+Function IsLatestDriver(browser As BrowserName) As Boolean
+    Select Case browser
+    Case BrowserName.Edge
+        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(Edge)
+    
+    '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
+    Case BrowserName.Chrome
+        IsLatestDriver = RequestWebDriverVersion(BrowserVersionToBuild(Chrome)) = DriverVersion(Chrome)
+        
+    End Select
+End Function
