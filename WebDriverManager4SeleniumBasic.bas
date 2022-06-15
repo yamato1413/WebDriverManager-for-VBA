@@ -31,7 +31,7 @@ End Property
 '// ダウンロードしたWebDriverのzipのデフォルトパス
 Public Property Get ZipPath(browser As BrowserName) As String
     Dim path_download As String
-    path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").Self.path
+    path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").self.Path
     Select Case browser
         Case BrowserName.Chrome
             ZipPath = path_download & "\chromedriver_win32.zip"
@@ -47,9 +47,11 @@ End Property
 '// WebDriverの実行ファイルの保存場所
 
 Public Property Get WebDriverPath(browser As BrowserName) As String
+    Dim path_AppDataLocal As String
+    path_AppDataLocal = CreateObject("Shell.Application").Namespace("shell:Local AppData").self.Path
     Select Case browser
-        Case BrowserName.Chrome: WebDriverPath = "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\chromedriver.exe"
-        Case BrowserName.Edge:   WebDriverPath = "C:" & Environ("HOMEPATH") & "\AppData\Local\SeleniumBasic\edgedriver.exe"
+        Case BrowserName.Chrome: WebDriverPath = path_AppDataLocal & "\SeleniumBasic\chromedriver.exe"
+        Case BrowserName.Edge:   WebDriverPath = path_AppDataLocal & "\SeleniumBasic\edgedriver.exe"
     End Select
 End Property
 
