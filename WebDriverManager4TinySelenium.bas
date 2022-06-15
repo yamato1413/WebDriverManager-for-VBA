@@ -264,52 +264,34 @@ End Sub
 '// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
 '// バージョンアップや新規PCへの配布時に余計な操作がいらない
 Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
-    Dim try As Long
-    try = 1
-    Do
-        On Error Resume Next
-            Select Case browser
-                Case BrowserName.Chrome: Driver.Chrome WebDriverPath(browser)
-                Case BrowserName.Edge:   Driver.Edge WebDriverPath(browser)
-            End Select
-        
-            Driver.OpenBrowser
-            Dim OK As Boolean
-            If Err.Description <> "" Then OK = False Else OK = True
-        On Error GoTo 0
-        
-        If OK Then Exit Do
-        
-        On Error Resume Next
-            Driver.Shutdown
-        On Error GoTo 0
-        
-        If Not IsOnline Or try > 1 Then GoTo Catch
-        
-        If fso.FileExists(WebDriverPath(browser)) Then
-            Dim folder_temp As String
-            folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
-            fso.CreateFolder folder_temp
-            fso.MoveFile WebDriverPath(browser), fso.BuildPath(folder_temp, "\webdriver.exe")
-        End If
-        InstallWebDriver browser
-        
-        try = try + 1
-    Loop
-
-    If fso.FolderExists(folder_temp) Then fso.DeleteFolder folder_temp
-    Exit Sub
     
-Catch:
-    If fso.FileExists(fso.BuildPath(folder_temp, "\webdriver.exe")) Then
-        fso.CopyFile fso.BuildPath(folder_temp, "\webdriver.exe"), WebDriverPath(browser), True
-        fso.DeleteFolder folder_temp
+    If Not IsOnline Then Err.Raise 4005, , "オフラインです。インターネットに接続してください。": Exit Sub
+    
+    '// アップデート処理
+    If Not IsLatestDriver(browser) Then
+        Dim driver_temp As String
+        If fso.FileExists(WebDriverPath(browser)) Then driver_temp = BuckupTempDriver(browser)
+        
+        Call InstallWebDriver(browser)
     End If
-    If IsOnline Then
-        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
+    
+    Select Case browser
+        Case BrowserName.Chrome: Driver.Chrome WebDriverPath(browser)
+        Case BrowserName.Edge:   Driver.Edge WebDriverPath(browser)
+    End Select
+
+    On Error Resume Next
+    Driver.OpenBrowser
+    Dim OK As Boolean: OK = Err.Number = 0
+    On Error GoTo 0
+    
+    If OK Then
+        If driver_temp <> "" Then DeleteTempDriver (driver_temp)
     Else
-        Err.Raise 4005, , "オフラインのため更新できません。インターネットに接続してください。"
+       If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
+        Err.Raise 4004, , "ブラウザのオープンに失敗しました。"
     End If
+
 End Sub
 
 
@@ -333,6 +315,8 @@ End Function
 
 '// ドライバーのバージョンを調べる
 Function DriverVersion(browser As BrowserName) As String
+    If Not fso.FileExists(WebDriverPath(browser)) Then DriverVersion = "": Exit Function
+    
     Dim ret As String
     ret = CreateObject("WScript.Shell").Exec(WebDriverPath(browser) & " -version").StdOut.ReadLine
     Dim reg
@@ -353,3 +337,26 @@ Function IsLatestDriver(browser As BrowserName) As Boolean
         
     End Select
 End Function
+
+'// WebDriverを一時フォルダに退避させる
+Function BuckupTempDriver(browser As BrowserName) As String
+    Dim folder_temp As String
+    folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
+    fso.CreateFolder folder_temp
+    
+    Dim path_driver As String
+    path_driver = fso.BuildPath(folder_temp, "\webdriver.exe")
+    fso.MoveFile WebDriverPath(browser), path_driver
+    
+    BuckupTempDriver = path_driver
+End Function
+
+'// WebDriverを一時フォルダからWebDriver置き場にコピーする
+Sub RestoreTempDriver(path As String, browser As BrowserName)
+    fso.CopyFile path, WebDriverPath(browser), True
+    fso.DeleteFolder fso.GetParentFolderName(path)
+End Sub
+
+Sub DeleteTempDriver(path As String)
+    fso.DeleteFolder fso.GetParentFolderName(path)
+End Sub
