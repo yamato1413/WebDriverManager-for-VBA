@@ -289,7 +289,7 @@ Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
     On Error GoTo 0
     
     If OK Then
-        If driver_temp <> "" Then Call DeleteTempDriver(driver_temp)
+        If driver_temp <> "" Then DeleteTempDriver (driver_temp)
     Else
         If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
         Err.Raise err_number, , err_desc
@@ -326,7 +326,7 @@ Function DriverVersion(browser As BrowserName) As String
     ret = CreateObject("WScript.Shell").Exec(WebDriverPath(browser) & " -version").StdOut.ReadLine
     Dim reg
     Set reg = CreateObject("VBScript.RegExp")
-    reg.Pattern = "\d+\.\d+\.\d+\.\d+"
+    reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
     DriverVersion = reg.Execute(ret)(0).value
 End Function
 
