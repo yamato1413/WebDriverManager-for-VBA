@@ -45,13 +45,21 @@ End Property
 
 
 '// WebDriverの実行ファイルの保存場所
-
 Public Property Get WebDriverPath(Browser As BrowserName) As String
-    Dim path_AppDataLocal As String
-    path_AppDataLocal = CreateObject("Shell.Application").Namespace("shell:Local AppData").self.path
+    Dim SeleniumBasicParentPath As String
+    SeleniumBasicParentPath = Environ("LOCALAPPDATA") & "\SeleniumBasic\"
+    
+    If Not fso.FolderExists(SeleniumBasicParentPath) Then
+        SeleniumBasicParentPath = Environ("ProgramFiles") & "\SeleniumBasic\"
+    End If
+    
+    If Not fso.FolderExists(SeleniumBasicParentPath) Then
+        SeleniumBasicParentPath = Environ("ProgramFiles(x86)") & "\SeleniumBasic\"
+    End If
+    
     Select Case Browser
-        Case BrowserName.Chrome: WebDriverPath = path_AppDataLocal & "\SeleniumBasic\chromedriver.exe"
-        Case BrowserName.Edge:   WebDriverPath = path_AppDataLocal & "\SeleniumBasic\edgedriver.exe"
+        Case BrowserName.Chrome: WebDriverPath = SeleniumBasicParentPath & "chromedriver.exe"
+        Case BrowserName.Edge:   WebDriverPath = SeleniumBasicParentPath & "edgedriver.exe"
     End Select
 End Property
 
