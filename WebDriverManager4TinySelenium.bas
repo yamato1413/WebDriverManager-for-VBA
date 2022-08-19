@@ -29,10 +29,10 @@ End Property
 
 
 '// ダウンロードしたWebDriverのzipのデフォルトパス
-Public Property Get ZipPath(browser As BrowserName) As String
+Public Property Get ZipPath(Browser As BrowserName) As String
     Dim path_download As String
     path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").Self.path
-    Select Case browser
+    Select Case Browser
     Case BrowserName.Chrome
         ZipPath = path_download & "\chromedriver_win32.zip"
     Case BrowserName.Edge
@@ -45,10 +45,10 @@ End Property
 
 
 '// WebDriverの実行ファイルの保存場所（ドキュメントフォルダ）
-Public Property Get WebDriverPath(browser As BrowserName) As String
+Public Property Get WebDriverPath(Browser As BrowserName) As String
     Dim path_document As String
     path_document = CreateObject("Shell.Application").Namespace("shell:Personal").Self.path
-    Select Case browser
+    Select Case Browser
         Case BrowserName.Chrome: WebDriverPath = path_document & "\WebDriver\chromedriver.exe"
         Case BrowserName.Edge:   WebDriverPath = path_document & "\WebDriver\edgedriver.exe"
     End Select
@@ -58,9 +58,9 @@ End Property
 
 '// ブラウザのバージョンをレジストリから読み取る
 '// 出力例　"94.0.992.31"
-Public Property Get BrowserVersion(browser As BrowserName)
+Public Property Get BrowserVersion(Browser As BrowserName)
     Dim reg_version As String
-    Select Case browser
+    Select Case Browser
         Case BrowserName.Chrome: reg_version = "HKEY_CURRENT_USER\SOFTWARE\Google\Chrome\BLBeacon\version"
         Case BrowserName.Edge:   reg_version = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Edge\BLBeacon\version"
     End Select
@@ -73,21 +73,21 @@ Catch:
     Err.Raise 4000, , "バージョン情報が取得できませんでした。ブラウザがインストールされていないか、一度も起動されたことがありません。"
 End Property
 '// 出力例　"94"
-Public Property Get BrowserVersionToMajor(browser As BrowserName)
+Public Property Get BrowserVersionToMajor(Browser As BrowserName)
     Dim vers
-    vers = Split(BrowserVersion(browser), ".")
+    vers = Split(BrowserVersion(Browser), ".")
     BrowserVersionToMajor = vers(0)
 End Property
 '// 出力例　"94.0"
-Public Property Get BrowserVersionToMinor(browser As BrowserName)
+Public Property Get BrowserVersionToMinor(Browser As BrowserName)
     Dim vers
-    vers = Split(BrowserVersion(browser), ".")
+    vers = Split(BrowserVersion(Browser), ".")
     BrowserVersionToMinor = Join(Array(vers(0), vers(1)), ".")
 End Property
 '// 出力例　"94.0.992"
-Public Property Get BrowserVersionToBuild(browser As BrowserName)
+Public Property Get BrowserVersionToBuild(Browser As BrowserName)
     Dim vers
-    vers = Split(BrowserVersion(browser), ".")
+    vers = Split(BrowserVersion(Browser), ".")
     BrowserVersionToBuild = Join(Array(vers(0), vers(1), vers(2)), ".")
 End Property
 
@@ -113,9 +113,9 @@ End Property
 '//
 '// 第3引数にてパスを指定すれば任意の場所に任意の名前で保存できる。
 '//     DownloadWebDriver Edge, "94.0.992.31", "C:\Users\yamato\Desktop\edgedriver_94.zip"
-Public Function DownloadWebDriver(browser As BrowserName, ver_webdriver As String, Optional path_save_to As String) As String
+Public Function DownloadWebDriver(Browser As BrowserName, ver_webdriver As String, Optional path_save_to As String) As String
     Dim url As String
-    Select Case browser
+    Select Case Browser
     Case BrowserName.Chrome
         url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", ver_webdriver)
     Case BrowserName.Edge
@@ -125,7 +125,7 @@ Public Function DownloadWebDriver(browser As BrowserName, ver_webdriver As Strin
         End Select
     End Select
     
-    If path_save_to = "" Then path_save_to = ZipPath(browser)   'デフォは"C:Users\USERNAME\Downloads\~~~.zip"
+    If path_save_to = "" Then path_save_to = ZipPath(Browser)   'デフォは"C:Users\USERNAME\Downloads\~~~.zip"
     
     DeleteUrlCacheEntry url
     Dim ret As Long
@@ -209,14 +209,14 @@ End Function
 '// 使用例
 '//     InstallWebDriver Chrome, "C:\Users\USERNAME\Desktop\a\b\c\chromedriver_94.exe"
 '//     ↑デスクトップに\a\b\c\フォルダが作成されてその中にドライバが配置される
-Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
+Sub InstallWebDriver(Browser As BrowserName, Optional path_driver As String)
     Debug.Print "WebDriverをインストールします......"
     
     Dim ver_browser   As String
     Dim ver_webdriver As String
-    ver_browser = BrowserVersion(browser)
-    Select Case browser
-        Case BrowserName.Chrome: ver_webdriver = RequestWebDriverVersion(BrowserVersionToBuild(browser))
+    ver_browser = BrowserVersion(Browser)
+    Select Case Browser
+        Case BrowserName.Chrome: ver_webdriver = RequestWebDriverVersion(BrowserVersionToBuild(Browser))
         Case BrowserName.Edge:   ver_webdriver = ver_browser
     End Select
     
@@ -224,14 +224,14 @@ Sub InstallWebDriver(browser As BrowserName, Optional path_driver As String)
     Debug.Print "   適合するWebDriver : Ver. " & ver_webdriver
     
     Dim path_zip As String
-    path_zip = DownloadWebDriver(browser, ver_webdriver)
+    path_zip = DownloadWebDriver(Browser, ver_webdriver)
     
-    Do Until fso.FileExists(ZipPath(browser))
+    Do Until fso.FileExists(ZipPath(Browser))
         DoEvents
     Loop
     Debug.Print "   ダウンロード完了:" & path_zip
     
-    If path_driver = "" Then path_driver = WebDriverPath(browser)
+    If path_driver = "" Then path_driver = WebDriverPath(Browser)
     
     If Not fso.FolderExists(fso.GetParentFolderName(path_driver)) Then
         Debug.Print "   WebDriverの保存先フォルダを作成します"
@@ -263,43 +263,37 @@ End Sub
 
 '// TinySeleniumVBAの "Driver.Chrome[Edge] path" と "Driver.OpenBrowser"をこれに置き換えれば、
 '// バージョンアップや新規PCへの配布時に余計な操作がいらない
-Public Sub SafeOpen(Driver As WebDriver, browser As BrowserName)
+Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
     
     If Not IsOnline Then Err.Raise 4005, , "オフラインです。インターネットに接続してください。": Exit Sub
     
+    Dim DriverPath As String
+    DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
+    
     '// アップデート処理
-    If Not IsLatestDriver(browser) Then
-        Dim driver_temp As String
-        If fso.FileExists(WebDriverPath(browser)) Then driver_temp = BuckupTempDriver(browser)
+    If Not IsLatestDriver(Browser, DriverPath) Then
+        Dim TmpDriver As String
+        If fso.FileExists(DriverPath) Then TmpDriver = BuckupTempDriver(DriverPath)
         
-        Call InstallWebDriver(browser)
+        Call InstallWebDriver(Browser, DriverPath)
     End If
     
-    Select Case browser
-        Case BrowserName.Chrome: Driver.Chrome WebDriverPath(browser)
-        Case BrowserName.Edge:   Driver.Edge WebDriverPath(browser)
+    Select Case Browser
+        Case BrowserName.Chrome: Driver.Chrome DriverPath
+        Case BrowserName.Edge:   Driver.Edge DriverPath
     End Select
 
-    On Error Resume Next
+    On Error GoTo Catch
     Driver.OpenBrowser
     
-    Dim OK As Boolean: OK = Err.Number = 0
-    Dim err_number As Long: err_number = Err.Number
-    Dim err_desc As String: err_desc = Err.Description
-    On Error GoTo 0
+    If TmpDriver <> "" Then Call DeleteTempDriver(TmpDriver)
+    Exit Sub
     
-    If OK Then
-        If driver_temp <> "" Then DeleteTempDriver (driver_temp)
-    Else
-        If driver_temp <> "" Then Call RestoreTempDriver(driver_temp, browser)
-        Err.Raise err_number, , err_desc
-    End If
-    
-    
+Catch:
+    If TmpDriver <> "" Then Call RollbackDriver(TmpDriver, DriverPath)
+    Err.Raise Err.Number, , Err.Description
 
 End Sub
-
-
 
 '// PCがオンラインかどうかを判定する
 '// リクエスト先がgooglなのは障害でページが開けないということは少なそうなので
@@ -318,12 +312,13 @@ Public Function IsOnline() As Boolean
     End Select
 End Function
 
+
 '// ドライバーのバージョンを調べる
-Function DriverVersion(browser As BrowserName) As String
-    If Not fso.FileExists(WebDriverPath(browser)) Then DriverVersion = "": Exit Function
+Function DriverVersion(DriverPath As String) As String
+    If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
     
     Dim ret As String
-    ret = CreateObject("WScript.Shell").Exec(WebDriverPath(browser) & " -version").StdOut.ReadLine
+    ret = CreateObject("WScript.Shell").Exec(DriverPath & " -version").StdOut.ReadLine
     Dim reg
     Set reg = CreateObject("VBScript.RegExp")
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
@@ -331,37 +326,39 @@ Function DriverVersion(browser As BrowserName) As String
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
-Function IsLatestDriver(browser As BrowserName) As Boolean
-    Select Case browser
+Function IsLatestDriver(Browser As BrowserName, DriverPath As String) As Boolean
+    Select Case Browser
     Case BrowserName.Edge
-        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(Edge)
+        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(DriverPath)
     
     '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
     Case BrowserName.Chrome
-        IsLatestDriver = RequestWebDriverVersion(BrowserVersionToBuild(Chrome)) = DriverVersion(Chrome)
-        
+        IsLatestDriver = RequestWebDriverVersion(BrowserVersionToBuild(Chrome)) = DriverVersion(DriverPath)
+    
     End Select
 End Function
 
 '// WebDriverを一時フォルダに退避させる
-Function BuckupTempDriver(browser As BrowserName) As String
-    Dim folder_temp As String
-    folder_temp = fso.BuildPath(fso.GetParentFolderName(WebDriverPath(browser)), fso.GetTempName)
-    fso.CreateFolder folder_temp
+Function BuckupTempDriver(DriverPath As String) As String
+    Dim TmpFolder As String
+    TmpFolder = fso.BuildPath(fso.GetParentFolderName(DriverPath), fso.GetTempName)
+    fso.CreateFolder TmpFolder
     
-    Dim path_driver As String
-    path_driver = fso.BuildPath(folder_temp, "\webdriver.exe")
-    fso.MoveFile WebDriverPath(browser), path_driver
+    Dim TmpDriver As String
+    TmpDriver = fso.BuildPath(TmpFolder, "\webdriver.exe")
+    fso.MoveFile DriverPath, TmpDriver
     
-    BuckupTempDriver = path_driver
+    BuckupTempDriver = TmpDriver
 End Function
 
-'// WebDriverを一時フォルダからWebDriver置き場にコピーする
-Sub RestoreTempDriver(path As String, browser As BrowserName)
-    fso.CopyFile path, WebDriverPath(browser), True
-    fso.DeleteFolder fso.GetParentFolderName(path)
+'// 一時的に取っておいた古いWebDriverを一時フォルダからWebDriver置き場に戻す
+Sub RollbackDriver(TmpDriverPath As String, DriverPath As String)
+    fso.CopyFile TmpDriverPath, DriverPath, True
+    fso.DeleteFolder fso.GetParentFolderName(TmpDriverPath)
 End Sub
 
-Sub DeleteTempDriver(path As String)
-    fso.DeleteFolder fso.GetParentFolderName(path)
+'// 一時的に取っておいた古いWebDriverを削除する
+Sub DeleteTempDriver(TmpDriverPath As String)
+    fso.DeleteFolder fso.GetParentFolderName(TmpDriverPath)
 End Sub
+
