@@ -327,9 +327,14 @@ Function DriverVersion(DriverPath As String) As String
     
     Dim ret As String
     ret = CreateObject("WScript.Shell").Exec(DriverPath & " -version").StdOut.ReadLine
+    'バージョン情報が取得できない古いバージョンがある
+    If ret = "" Then DriverVersion = "": Exit Function
+    
     Dim reg
     Set reg = CreateObject("VBScript.RegExp")
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
+    
+    On Error Resume Next
     DriverVersion = reg.Execute(ret)(0).value
 End Function
 
