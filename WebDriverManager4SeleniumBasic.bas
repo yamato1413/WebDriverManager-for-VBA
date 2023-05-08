@@ -65,22 +65,38 @@ End Property
 
 
 
-'// ブラウザのバージョンをレジストリから読み取る
+'// ブラウザのバージョンをブラウザの実行ファイルのプロパティから読み取る
 '// 出力例　"94.0.992.31"
 Public Property Get BrowserVersion(Browser As BrowserName)
-    Dim reg_version As String
+    Dim wsh As Object
+    Set wsh = CreateObject("WScript.Shell")
+
+    Const CommandEdge = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"""""")).VersionInfo.FileVersion"
+    Const CommandChrome1 = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files\Google\Chrome\Application\chrome.exe"""""")).VersionInfo.FileVersion"
+    Const CommandChrome2 = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files (x86)\Google\Chrome\Application\chrome.exe"""""")).VersionInfo.FileVersion"
+    
     Select Case Browser
-        Case BrowserName.Chrome: reg_version = "HKEY_CURRENT_USER\SOFTWARE\Google\Chrome\BLBeacon\version"
-        Case BrowserName.Edge:   reg_version = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Edge\BLBeacon\version"
+    Case BrowserName.Chrome
+        BrowserVersion = GetCommandResult(CommandChrome1)
+        If BrowserVersion = "" Then 
+            BrowserVersion = GetCommandResult(CommandChrome2)
+        End If
+    Case BrowserName.Edge
+        BrowserVersion = GetCommandResult(CommandEdge)
     End Select
-    
-    On Error GoTo Catch
-    BrowserVersion = CreateObject("WScript.Shell").RegRead(reg_version)
-    Exit Property
-    
-Catch:
-    Err.Raise 4000, , "バージョン情報が取得できませんでした。ブラウザがインストールされていません。"
 End Property
+
+Private Function GetCommandResult(ByVal Command As String) As String
+    Const WshFinished = 1
+    Dim ret As Object
+    Set ret = wsh.Exec(Command)
+    Do Until ret.Status = WshFinished
+        Doevents
+    Loop
+    GetCommandResult = ret.StdOut.ReadLine
+End Function
+
+
 '// 出力例　"94"
 Public Property Get BrowserVersionToMajor(Browser As BrowserName)
     Dim vers
