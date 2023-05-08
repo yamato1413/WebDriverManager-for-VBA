@@ -59,8 +59,6 @@ End Property
 '// ブラウザのバージョンをブラウザの実行ファイルのプロパティから読み取る
 '// 出力例　"94.0.992.31"
 Public Property Get BrowserVersion(Browser As BrowserName)
-    Dim wsh As Object
-    Set wsh = CreateObject("WScript.Shell")
 
     Const CommandEdge = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"""""")).VersionInfo.FileVersion"
     Const CommandChrome1 = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files\Google\Chrome\Application\chrome.exe"""""")).VersionInfo.FileVersion"
@@ -79,6 +77,9 @@ End Property
 
 Private Function GetCommandResult(ByVal Command As String) As String
     Const WshFinished = 1
+    Dim wsh As Object
+    Set wsh = CreateObject("WScript.Shell")
+    
     Dim ret As Object
     Set ret = wsh.Exec(Command)
     Do Until ret.Status = WshFinished
