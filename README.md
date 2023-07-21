@@ -18,7 +18,7 @@ git clone github.com/yamato1413/WebDriverManager-for-VBA
 
 ```VB
 '//TinySeleniumVBA
-Dim Driver As WebDriver
+Dim Driver As New WebDriver
 Driver.Edge "WebDriverへのパス"
 Driver.OpenBrowser
 '   ↓
@@ -26,24 +26,22 @@ SafeOpen Driver, Edge [,"WebDriverへのパス"] '// 第3引数は省略可
 ```
 ```VB
 '// SeleniumBasic
-Dim Driver As Selenium.ChromeDriver
+Dim Driver As New Selenium.ChromeDriver
 Driver.Start 
 '   ↓
-SafeOpen Driver, Chrome [,"WebDriverへのパス"] '// 第3引数は省略可
+Dim Driver As New Selenium.WebDriver
+SafeOpen Driver, Chrome
 ```
 
-この```SafeOpen```は、ブラウザを開く前にWebDriverの存在を確認し、なければWebDriverのダウンロード・展開を開始します。
-また、```Driver.OpenBrowser[Start]```がコケた場合(WebDriverとブラウザのバージョンが違う時)、適合するWebDriverをダウンロード・展開し```Driver.OpenBrowser[Start]```をリトライします。
+ブラウザを開く前にWebDriverの存在・バージョンをチェックします。
+WebDriverが存在しない、またはバージョンがブラウザと異なる場合にWebDriverのダウンロード・展開を開始します。
 
-つまり、```SafeOpen```でマクロを書いておけば、バージョンアップ時どころか、マクロ配布時にWebDriverを同梱したりWebDriverの入れ方マニュアルを作らなくてよくなります。
-これはマクロ開発者にとって非常にうれしいことだと思います。
+存在しない時にもダウンロードを行うので、バージョンアップ時だけでなく、マクロ配布時にWebDriverを同梱したりWebDriverの入れ方マニュアルを作らなくてよくなります。
 
 以下はSampleコードです。
 
 ```VB
 '// TinySeleniumVBA
-Option Explicit
-
 Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public Sub Sample()
     Dim Driver As New WebDriver
@@ -55,46 +53,13 @@ End Sub
 ```
 ```VB
 '// SeleniumBasic
-Option Explicit
-
-Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public Sub Sample()
     Dim Driver As New Selenium.ChromeDriver
     SafeOpen Driver, Chrome
     Driver.Get "https://www.google.co.jp/?q=selenium"
-    Sleep 3000
-    Driver.Close
+    Driver.Wait 3000
+    Driver.Quit
 End Sub
 ```
-
-#### 補足
-WebDriverの存在を確認すると書きましたが、実際にはどこを確認しているのか。
-デフォルトでは以下の場所を確認しています。
-
-```
-TinySeleniumVBA版
-    C:\Users\USERNAME\Documents\WebDriver\edgedriver.exe[chromedriver.exe]
-SeleniumBasic版
-    C:\Users\USERNAME\AppData\Local\SeleniumBasic\edgedriver.exe[chromedriver.exe]
-    C:\Program Files\SeleniumBasic\edgedriver.exe[chromedriver.exe]
-    C:\Program Files (x86)\SeleniumBasic\edgedriver.exe[chromedriver.exe]
-    のいずれか
-```
-
-最初の例で以下のように書きました
-
-```VB
-SafeOpen Driver, Edge [,"WebDriverへのパス"] '// 第3引数は省略可
-```
-
-WebDriverを保存する場所にこだわりがあるなら引数で指定してもいいですが，
-パスを省略した場合は上記のデフォルトパスを確認してWebDriverが存在しなければ自動でインストールを始めるので、
-特にデフォルトのパスに異論がなければ
-
-```VB
-SafeOpen Driver, Edge
-```
-
-で十分です。
 
 よいスクレイピングライフを！
