@@ -30,7 +30,7 @@ Dim Driver As New Selenium.ChromeDriver
 Driver.Start 
 '   ↓
 Dim Driver As New Selenium.WebDriver
-SafeOpen Driver, Chrome
+SafeOpen Driver, Chrome [,"WebDriverへのパス"] '// 第3引数は省略可
 ```
 
 ブラウザを開く前にWebDriverの存在・バージョンをチェックします。

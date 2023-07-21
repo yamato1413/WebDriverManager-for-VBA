@@ -165,9 +165,10 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     
     Select Case Browser
     Case BrowserName.Chrome
-        Select Case Is64BitOS
-            Case True: url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win64/chromedriver-win64.zip", "{version}", Version)
-            Case Else: url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win32/chromedriver-win32.zip", "{version}", Version)
+        Select Case True
+            Case ToMajor(Version) < 115: url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", Version)
+            Case Is64BitOS:              url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win64/chromedriver-win64.zip", "{version}", Version)
+            Case Else:                   url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win32/chromedriver-win32.zip", "{version}", Version)
         End Select
         
     Case BrowserName.Edge
@@ -311,7 +312,7 @@ End Sub
 
 
 '// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
-Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName)
+Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
     
     Dim DriverPath As String
     DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
@@ -365,7 +366,7 @@ Function DriverVersion(DriverPath As String) As String
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
     
     On Error Resume Next
-    DriverVersion = reg.Execute(VersionInfo)(0).Value
+    DriverVersion = reg.Execute(VersionInfo)(0).value
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
