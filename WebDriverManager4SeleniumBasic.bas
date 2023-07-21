@@ -6,11 +6,12 @@ Enum BrowserName
     Edge
 End Enum
 
+#Const DEV = 0
 
 '// ファイルダウンロード用のWin32API
 #If VBA7 Then
 Private Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
-    (ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
+    (ByVal pCaller As LongPtr, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As LongPtr) As Long
 Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
 #Else
 Private Declare Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
@@ -19,261 +20,283 @@ Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCache
 #End If
 
 
-Private Property Get fso() 'As FileSystemObject
-    Static obj As Object
-    If obj Is Nothing Then Set obj = CreateObject("Scripting.FileSystemObject")
-    Set fso = obj
-End Property
 
 
+#If DEV Then
+    Dim fso As New Scripting.FileSystemObject
+    Dim wsh As New WshShell
+    Dim shell As New Shell32.shell
+#Else
+    Private Property Get fso() As Object
+        Static Obj As Object
+        If Obj Is Nothing Then Set Obj = CreateObject("Scripting.FileSystemObject")
+        Set fso = Obj
+    End Property
+    
+    Private Property Get wsh() As Object
+        Static Obj As Object
+        If Obj Is Nothing Then Set Obj = CreateObject("WScript.Shell")
+        Set wsh = Obj
+    End Property
+    
+    Private Property Get shell() As Object
+        Static Obj As Object
+        If Obj Is Nothing Then Set Obj = CreateObject("Shell.Application")
+        Set shell = Obj
+    End Property
+#End If
 
 
-'// ダウンロードしたWebDriverのzipのデフォルトパス
 Public Property Get ZipPath(Browser As BrowserName) As String
-    Dim path_download As String
-    path_download = CreateObject("Shell.Application").Namespace("shell:Downloads").self.path
+    Dim DownloadFolderPath As String
+    DownloadFolderPath = shell.Namespace("shell:Downloads").Self.path
+    
     Select Case Browser
     Case BrowserName.Chrome
-        ZipPath = path_download & "\chromedriver_win32.zip"
+        Select Case Is64BitOS
+            Case True: ZipPath = DownloadFolderPath & "\chromedriver-win64.zip"
+            Case Else: ZipPath = DownloadFolderPath & "\chromedriver-win32.zip"
+        End Select
+        
     Case BrowserName.Edge
         Select Case Is64BitOS
-            Case True: ZipPath = path_download & "\edgedriver_win64.zip"
-            Case Else: ZipPath = path_download & "\edgedriver_win32.zip"
+            Case True: ZipPath = DownloadFolderPath & "\edgedriver_win64.zip"
+            Case Else: ZipPath = DownloadFolderPath & "\edgedriver_win32.zip"
         End Select
     End Select
 End Property
 
 
-'// WebDriverの実行ファイルの保存場所
 Public Property Get WebDriverPath(Browser As BrowserName) As String
-    Dim SeleniumBasicParentPath As String
-    SeleniumBasicParentPath = Environ("LOCALAPPDATA") & "\SeleniumBasic\"
+    Dim SeleniumPath1 As String
+    Dim SeleniumPath2 As String
+    Dim SeleniumPath3 As String
+    Dim SeleniumPath4 As String
     
-    If Not fso.FolderExists(SeleniumBasicParentPath) Then
-        SeleniumBasicParentPath = Environ("ProgramFiles") & "\SeleniumBasic\"
-    End If
+    SeleniumPath1 = Environ("LocalAppData") & "\SeleniumBasic\"
+    SeleniumPath2 = Environ("Programfiles(x86)") & "\SeleniumBasic\"
+    SeleniumPath3 = Environ("ProgramW6432") & "\SeleniumBasic\"
+    SeleniumPath4 = Environ("Programfiles") & "\SeleniumBasic\"
     
-    If Not fso.FolderExists(SeleniumBasicParentPath) Then
-        SeleniumBasicParentPath = Environ("ProgramFiles(x86)") & "\SeleniumBasic\"
-    End If
+    Dim BasePath As String
+    Select Case True
+        Case fso.FolderExists(SeleniumPath1): BasePath = SeleniumPath1
+        Case fso.FolderExists(SeleniumPath2): BasePath = SeleniumPath2
+        Case fso.FolderExists(SeleniumPath3): BasePath = SeleniumPath3
+        Case fso.FolderExists(SeleniumPath4): BasePath = SeleniumPath4
+    End Select
     
     Select Case Browser
-        Case BrowserName.Chrome: WebDriverPath = SeleniumBasicParentPath & "chromedriver.exe"
-        Case BrowserName.Edge:   WebDriverPath = SeleniumBasicParentPath & "edgedriver.exe"
+        Case BrowserName.Chrome: WebDriverPath = BasePath & "chromedriver.exe"
+        Case BrowserName.Edge:   WebDriverPath = BasePath & "edgedriver.exe"
     End Select
 End Property
 
-
-
-'// ブラウザのバージョンをブラウザの実行ファイルのプロパティから読み取る
-'// 出力例　"94.0.992.31"
 Public Property Get BrowserVersion(Browser As BrowserName)
-
-    Const CommandEdge = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"""""")).VersionInfo.FileVersion"
-    Const CommandChrome1 = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files\Google\Chrome\Application\chrome.exe"""""")).VersionInfo.FileVersion"
-    Const CommandChrome2 = "powershell -command (get-item ($env:SystemDrive + """"""\Program Files (x86)\Google\Chrome\Application\chrome.exe"""""")).VersionInfo.FileVersion"
+    Dim EdgePath1 As String
+    Dim EdgePath2 As String
+    Dim EdgePath3 As String
+    Dim ChromePath1 As String
+    Dim ChromePath2 As String
+    Dim ChromePath3 As String
+    EdgePath1 = Environ("Programfiles(x86)") & "\Microsoft\Edge\Application\msedge.exe"
+    EdgePath2 = Environ("ProgramW6432") & "\Microsoft\Edge\Application\msedge.exe"
+    EdgePath3 = Environ("Programfiles") & "\Microsoft\Edge\Application\msedge.exe"
+    ChromePath1 = Environ("Programfiles(x86)") & "\Google\Chrome\Application\chrome.exe"
+    ChromePath2 = Environ("ProgramW6432") & "\Google\Chrome\Application\chrome.exe"
+    ChromePath3 = Environ("Programfiles") & "\Google\Chrome\Application\chrome.exe"
     
+    Dim BrowserFilePath As String
+    Dim TargetFile
     Select Case Browser
-    Case BrowserName.Chrome
-        BrowserVersion = GetCommandResult(CommandChrome1)
-        If BrowserVersion = "" Then 
-            BrowserVersion = GetCommandResult(CommandChrome2)
-        End If
-    Case BrowserName.Edge
-        BrowserVersion = GetCommandResult(CommandEdge)
+    Case Edge
+        Select Case True
+            Case fso.FileExists(EdgePath1): BrowserFilePath = EdgePath1
+            Case fso.FileExists(EdgePath2): BrowserFilePath = EdgePath2
+            Case fso.FileExists(EdgePath3): BrowserFilePath = EdgePath3
+        End Select
+
+        
+    Case Chrome
+        Select Case True
+            Case fso.FileExists(ChromePath1): BrowserFilePath = ChromePath1
+            Case fso.FileExists(ChromePath2): BrowserFilePath = ChromePath2
+            Case fso.FileExists(ChromePath3): BrowserFilePath = ChromePath3
+        End Select
     End Select
-End Property
-
-Private Function GetCommandResult(ByVal Command As String) As String
-    Const WshFinished = 1
-    Dim wsh As Object
-    Set wsh = CreateObject("WScript.Shell")
     
-    Dim ret As Object
-    Set ret = wsh.Exec(Command)
-    Do Until ret.Status = WshFinished
-        Doevents
-    Loop
-    GetCommandResult = ret.StdOut.ReadLine
-End Function
-
+    BrowserVersion = fso.GetFileVersion(BrowserFilePath)
+End Property
 
 '// 出力例　"94"
-Public Property Get BrowserVersionToMajor(Browser As BrowserName)
-    Dim vers
-    vers = Split(BrowserVersion(Browser), ".")
-    BrowserVersionToMajor = vers(0)
+Public Property Get ToMajor(Version As String)
+    Dim Vers
+    Vers = Split(Version, ".")
+    ToMajor = Vers(0)
 End Property
 '// 出力例　"94.0"
-Public Property Get BrowserVersionToMinor(Browser As BrowserName)
-    Dim vers
-    vers = Split(BrowserVersion(Browser), ".")
-    BrowserVersionToMinor = Join(Array(vers(0), vers(1)), ".")
+Public Property Get ToMinor(Version As String)
+    Dim Vers
+    Vers = Split(Version, ".")
+    ToMinor = Join(Array(Vers(0), Vers(1)), ".")
 End Property
 '// 出力例　"94.0.992"
-Public Property Get BrowserVersionToBuild(Browser As BrowserName)
-    Dim vers
-    vers = Split(BrowserVersion(Browser), ".")
-    BrowserVersionToBuild = Join(Array(vers(0), vers(1), vers(2)), ".")
+Public Property Get ToBuild(Version As String)
+    Dim Vers
+    Vers = Split(Version, ".")
+    ToBuild = Join(Array(Vers(0), Vers(1), Vers(2)), ".")
 End Property
 
 
 '// OSが64Bitかどうかを判定する
 Public Property Get Is64BitOS() As Boolean
-    Dim arch As String
+    Dim Arch As String
     '戻り値 "AMD64","IA64","x86"のいずれか
-    arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITECTURE")
+    Arch = wsh.Environment("Process").Item("PROCESSOR_ARCHITECTURE")
     '64bitOSで32bitOfficeを実行している場合、PROCESSOR_ARCHITEW6432に本来のOSのbit数が退避されているので確認
-    If InStr(arch, "64") = 0 Then arch = CreateObject("WScript.Shell").Environment("Process").Item("PROCESSOR_ARCHITEW6432")
-    Is64BitOS = InStr(arch, "64")
+    If InStr(Arch, "64") = 0 Then Arch = wsh.Environment("Process").Item("PROCESSOR_ARCHITEW6432")
+    Is64BitOS = InStr(Arch, "64")
 End Property
 
 
-
-
-'// 第3引数を省略すれば、ダウンロードフォルダにダウンロードされる
-'//     DownloadWebDriver Edge, "94.0.992.31"
-'//
-'// 第2引数にBrowserVersionプロパティを使えば、現在のブラウザに適合したWebDriverをダウンロードできる
-'//     DownloadWebDriver Edge, BrowserVersion(Edge)
-'//
-'// 第3引数にてパスを指定すれば任意の場所に任意の名前で保存できる。
-'//     DownloadWebDriver Edge, "94.0.992.31", "C:\Users\yamato\Desktop\edgedriver_94.zip"
-Public Function DownloadWebDriver(Browser As BrowserName, ver_webdriver As String, Optional path_save_to As String) As String
+Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Optional PathSaveTo As String) As String
     Dim url As String
+    If PathSaveTo = "" Then PathSaveTo = ZipPath(Browser)
+    
     Select Case Browser
     Case BrowserName.Chrome
-        url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", ver_webdriver)
+        Select Case Is64BitOS
+            Case True: url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win64/chromedriver-win64.zip", "{version}", Version)
+            Case Else: url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win32/chromedriver-win32.zip", "{version}", Version)
+        End Select
+        
     Case BrowserName.Edge
         Select Case Is64BitOS
-            Case True: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win64.zip", "{version}", ver_webdriver)
-            Case Else: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip", "{version}", ver_webdriver)
+            Case True: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win64.zip", "{version}", Version)
+            Case Else: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip", "{version}", Version)
         End Select
     End Select
     
-    If path_save_to = "" Then path_save_to = ZipPath(Browser)   'デフォは"C:Users\USERNAME\Downloads\~~~.zip"
-    
+    Dim Ret As Long
     DeleteUrlCacheEntry url
-    Dim ret As Long
-    ret = URLDownloadToFile(0, url, path_save_to, 0, 0)
-    If ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
-    
-    DownloadWebDriver = path_save_to
+    Ret = URLDownloadToFile(0, url, PathSaveTo, 0, 0)
+    If Ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
+    DownloadWebDriver = PathSaveTo
 End Function
 
-
-
-'// zipから中身を取り出して指定の場所に実行ファイルを展開する
-'// chromedriver.exe(デフォルトの名前)があるところにchromedriver_94.exeとかで展開できるよう、
-'// 元の実行ファイルを上書きしないように一度tempフォルダを作ってから実行ファイルを目的のパスへ移す
-'// 普通zipを展開するときは展開先のフォルダを指定するが、この関数はWebDriverの実行ファイルのパスで指定するので注意！(展開するのもexeだけ)
-'// 使用例
-'//     Extract "C:\Users\yamato\Downloads\chromedriver_win32.zip", "C:\Users\yamato\Downloads\chromedriver_94.exe"
-Sub Extract(path_zip As String, path_save_to As String)
-    Debug.Print "zipを展開します"
+Public Function Extract(PathFrom As String, Optional PathTo As String) As String
     
-    Dim folder_temp
-    folder_temp = fso.BuildPath(fso.GetParentFolderName(path_save_to), fso.GetTempName)
-    fso.CreateFolder folder_temp
-    Debug.Print "    一時フォルダ : " & folder_temp
+    ' hoge.zip → hoge
+    If PathTo = "" Then PathTo = Left(PathFrom, Len(PathFrom) - 4)
+    
+    Debug.Print "zipを展開します"
+    fso.CreateFolder PathTo
+    Debug.Print "    一時フォルダ : " & PathTo
     
     'PowerShellを使って展開するとマルウェア判定されたので，
     'MS非推奨だがShell.Applicationを使ってzipを解凍する
     
     On Error GoTo Catch
-    Dim sh As Object
-    Set sh = CreateObject("Shell.Application")
     'zipファイルに入っているファイルを指定したフォルダーにコピーする
     '文字列を一度()で評価してからNamespaceに渡さないとエラーが出る
-    sh.Namespace((folder_temp)).CopyHere sh.Namespace((path_zip)).Items
-    
-    Dim path_exe As String
-    path_exe = fso.BuildPath(folder_temp, Dir(folder_temp & "\*.exe"))
-    
-    If fso.FileExists(path_save_to) Then fso.DeleteFile path_save_to
-    fso.CopyFile path_exe, path_save_to, True
-    
-    fso.DeleteFolder folder_temp
-    Debug.Print "    展開 : " & path_save_to
-    Debug.Print "WebDriverを配置しました"
-    Exit Sub
-    
+    shell.Namespace((PathTo)).CopyHere shell.Namespace((PathFrom)).Items
+    Extract = PathTo
+    Exit Function
 Catch:
-    fso.DeleteFolder folder_temp
+    fso.DeleteFolder PathTo, True
     Err.Raise 4002, , "Zipの展開に失敗しました。原因：" & Err.Description
-    Exit Sub
-End Sub
+    Exit Function
+End Function
+
+Public Function FindExe(FolderPath) As String
+    Dim f
+    For Each f In fso.GetFolder(FolderPath).Files
+        If f.Name Like "*.exe" Then FindExe = f.path
+        If FindExe <> "" Then Exit Function
+    Next
+
+    For Each f In fso.GetFolder(FolderPath).SubFolders
+        FindExe = FindExe(f)
+        If FindExe <> "" Then Exit Function
+    Next
+End Function
 
 
-'// 基本的にはブラウザのバージョンと全く同じバージョンのWebDriverをダウンロードすればいいのだが、
-'// ChromeDriverはビルド番号までのバージョンを投げるとおすすめバージョンを教えてくれるらしい？
-'// よくわかんないけど、サイトにそう書いてあった。→　https://chromedriver.chromium.org/downloads/version-selection
-'// バグフィックスをリリースするから必ずしも一致するとは限らないとか。
-Public Function RequestWebDriverVersion(ver_chrome)
+Public Function RequestWebDriverVersion(ChromeVer As String) As String
     Dim http 'As XMLHTTP60
     Dim url As String
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP")
-    url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" & ver_chrome
+    url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" & ChromeVer
+    http.Open "GET", url, False
+    http.send
+    
+    If http.statusText = "OK" Then
+        RequestWebDriverVersion = http.responseText
+        Exit Function
+    End If
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    url = "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build.json"
     http.Open "GET", url, False
     http.send
     
     If http.statusText <> "OK" Then
-        Err.Raise 4003, "サーバーへの接続に失敗しました"
+        Err.Raise 4003, , "適合ドライバーの情報を取得できませんでした"
         Exit Function
     End If
-
-    RequestWebDriverVersion = http.responseText
+    
+    RequestWebDriverVersion = ParseJson(http.responseText)("builds")(ChromeVer)("version")
 End Function
 
 
-'// 自動でブラウザのバージョンに一致するWebDriverをダウンロードし、zipを展開、WebDriverのexeを特定のフォルダに配置する
-'// デフォルトではC:\Users\USERNAME\Downloadsにダウンロードし、
-'// C:\Users\USERNAME\AppData\SeleniumBasic\chromedriver.exe[edgedriver.exe]に配置する
-'// 第2引数を指定すれば任意のフォルダ・ファイル名にしてインストールできる
-'// 指定したパスの途中のフォルダが存在しなくても、自動で作成する
-'// 使用例
-'//     InstallWebDriver Chrome, "C:\Users\USERNAME\Desktop\a\b\c\chromedriver_94.exe"
-'//     ↑デスクトップに\a\b\c\フォルダが作成されてその中にドライバが配置される
-Public Sub InstallWebDriver(Browser As BrowserName, Optional path_driver As String)
+
+Public Sub InstallWebDriver(Browser As BrowserName, DriverPathTo As String)
+    
+    If DriverPathTo = "" Then DriverPathTo = WebDriverPath(Browser)
+    
     Debug.Print "WebDriverをインストールします......"
     
-    Dim ver_browser   As String
-    Dim ver_webdriver As String
-    ver_browser = BrowserVersion(Browser)
+    Dim BrowserVer   As String
+    Dim DriverVer As String
+    BrowserVer = BrowserVersion(Browser)
     Select Case Browser
-        Case BrowserName.Chrome: ver_webdriver = RequestWebDriverVersion(BrowserVersionToBuild(Browser))
-        Case BrowserName.Edge:   ver_webdriver = ver_browser
+        Case BrowserName.Chrome: DriverVer = RequestWebDriverVersion(ToBuild(BrowserVer))
+        Case BrowserName.Edge:   DriverVer = BrowserVer
     End Select
     
-    Debug.Print "   ブラウザ          : Ver. " & ver_browser
-    Debug.Print "   適合するWebDriver : Ver. " & ver_webdriver
+    Debug.Print "   ブラウザ          : Ver. " & BrowserVer
+    Debug.Print "   適合するWebDriver : Ver. " & DriverVer
     
-    Dim path_zip As String
-    path_zip = DownloadWebDriver(Browser, ver_webdriver)
+    Dim ZipFile As String
+    ZipFile = DownloadWebDriver(Browser, DriverVer)
     
-    Do Until fso.FileExists(ZipPath(Browser))
+    Do Until fso.FileExists(ZipFile)
         DoEvents
     Loop
-    Debug.Print "   ダウンロード完了:" & path_zip
+    Debug.Print "   ダウンロード完了:" & ZipFile
     
-    If path_driver = "" Then path_driver = WebDriverPath(Browser)
     
-    If Not fso.FolderExists(fso.GetParentFolderName(path_driver)) Then
+    If Not fso.FolderExists(fso.GetParentFolderName(DriverPathTo)) Then
         Debug.Print "   WebDriverの保存先フォルダを作成します"
-        CreateFolderEx fso.GetParentFolderName(path_driver)
+        CreateFolderEx fso.GetParentFolderName(DriverPathTo)
     End If
     
-    Extract path_zip, path_driver
+    Dim ExtractedFolder As String
+    ExtractedFolder = Extract(ZipFile)
     
+    Dim ExePath As String
+    ExePath = FindExe(ExtractedFolder)
+    
+    If fso.FileExists(DriverPathTo) Then fso.DeleteFile DriverPathTo, True
+    fso.CopyFile ExePath, DriverPathTo, True
+    
+    fso.DeleteFolder ExtractedFolder
+    Debug.Print "    展開 : " & DriverPathTo
+    Debug.Print "WebDriverを配置しました"
     Debug.Print "インストール完了"
 End Sub
 
-
-
-'// パスに含まれる全てのフォルダの存在確認をしてフォルダを作る関数
-'// 使用例
-'// CreateFolderEx "C:\a\b\c\d\e\"
 Public Sub CreateFolderEx(path_folder As String)
     '// 親フォルダが遡れなくなるところまで再帰で辿る
     If fso.GetParentFolderName(path_folder) <> "" Then
@@ -288,9 +311,7 @@ End Sub
 
 
 '// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
-Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
-    
-    If Not IsOnline Then Err.Raise 4005, , "オフラインです。インターネットに接続してください。": Exit Sub
+Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName)
     
     Dim DriverPath As String
     DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
@@ -319,40 +340,32 @@ Catch:
 End Sub
 
 
-
-'// PCがオンラインかどうかを判定する
-'// リクエスト先がgooglなのは障害でページが開けないということは少なそうなので
-Public Function IsOnline() As Boolean
-    Dim http
-    Dim url As String
-    On Error Resume Next
-    Set http = CreateObject("MSXML2.ServerXMLHTTP")
-    url = "https://www.google.co.jp/"
-    http.Open "GET", url, False
-    http.send
-    
-    Select Case http.statusText
-        Case "OK": IsOnline = True
-        Case Else: IsOnline = False
-    End Select
-End Function
-
-
 '// ドライバーのバージョンを調べる
 Function DriverVersion(DriverPath As String) As String
+    
     If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
     
-    Dim ret As String
-    ret = CreateObject("WScript.Shell").Exec(DriverPath & " -version").StdOut.ReadLine
+    Dim TempFile
+    Dim VersionInfo
+    TempFile = Environ$("TMP") & "\DriverVersion_" & Format$(Now, "YYYYMMDDHHMMSS") & ".txt"
+    CreateObject("WScript.Shell").Run "cmd /c " & DriverPath & " -version >" & TempFile, 0, True
+    
+    With fso.OpenTextFile(TempFile)
+        VersionInfo = .ReadLine
+        .Close
+    End With
+    
+    fso.DeleteFile TempFile, True
+    
     'バージョン情報が取得できない古いバージョンがある
-    If ret = "" Then DriverVersion = "": Exit Function
+    If VersionInfo = "" Then DriverVersion = "": Exit Function
     
     Dim reg
     Set reg = CreateObject("VBScript.RegExp")
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
     
     On Error Resume Next
-    DriverVersion = reg.Execute(ret)(0).value
+    DriverVersion = reg.Execute(VersionInfo)(0).Value
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
@@ -363,32 +376,146 @@ Function IsLatestDriver(Browser As BrowserName, DriverPath As String) As Boolean
     
     '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
     Case BrowserName.Chrome
-        IsLatestDriver = RequestWebDriverVersion(BrowserVersionToBuild(Chrome)) = DriverVersion(DriverPath)
+        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(DriverPath)
     
     End Select
 End Function
 
 '// WebDriverを一時フォルダに退避させる
 Function BuckupTempDriver(DriverPath As String) As String
-    Dim TmpFolder As String
-    TmpFolder = fso.BuildPath(fso.GetParentFolderName(DriverPath), fso.GetTempName)
-    fso.CreateFolder TmpFolder
+    Dim TempFolder As String
+    TempFolder = fso.BuildPath(fso.GetParentFolderName(DriverPath), fso.GetTempName)
+    fso.CreateFolder TempFolder
     
-    Dim TmpDriver As String
-    TmpDriver = fso.BuildPath(TmpFolder, "\webdriver.exe")
-    fso.MoveFile DriverPath, TmpDriver
+    Dim TempDriver As String
+    TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(DriverPath))
+    fso.MoveFile DriverPath, TempDriver
     
-    BuckupTempDriver = TmpDriver
+    BuckupTempDriver = TempDriver
 End Function
 
 '// 一時的に取っておいた古いWebDriverを一時フォルダからWebDriver置き場に戻す
-Sub RollbackDriver(TmpDriverPath As String, DriverPath As String)
-    fso.CopyFile TmpDriverPath, DriverPath, True
-    fso.DeleteFolder fso.GetParentFolderName(TmpDriverPath)
+Sub RollbackDriver(TempDriverPath As String, DriverPath As String)
+    fso.CopyFile TempDriverPath, DriverPath, True
+    fso.DeleteFolder fso.GetParentFolderName(TempDriverPath)
 End Sub
 
 '// 一時的に取っておいた古いWebDriverを削除する
-Sub DeleteTempDriver(TmpDriverPath As String)
-    fso.DeleteFolder fso.GetParentFolderName(TmpDriverPath)
+Sub DeleteTempDriver(TempDriverPath As String)
+    fso.DeleteFolder fso.GetParentFolderName(TempDriverPath)
 End Sub
 
+'簡易的なJsonパーサー
+Function ParseJson(Json As String) As Object
+    Dim i As Long
+    Dim s0 As String
+    Dim s1 As String
+    i = 1
+    Do While i <= Len(Json)
+        SkipNull Json, i
+        Select Case Mid(Json, i, 1)
+        Case "{"
+            i = i + 1
+            Set ParseJson = ParseObject(Json, i)
+            Exit Function
+        End Select
+        
+    Loop
+    
+End Function
+
+Private Sub SkipNull(Json, ByRef i)
+    Dim s As String
+    s = Mid(Json, i, 1)
+    Do While s = " " Or s = vbCr Or s = vbLf Or s = vbTab
+        i = i + 1
+        s = Mid(Json, i, 1)
+    Loop
+    
+End Sub
+
+Private Function ParseObject(Json As String, ByRef i)
+    Dim Obj As Object
+    Set Obj = CreateObject("Scripting.Dictionary")
+    Dim Key
+    
+    Do
+        SkipNull Json, i
+        If Mid(Json, i, 1) <> """" Then Err.Raise 4000, , "Jsonのパースに失敗"
+        i = i + 1
+        Key = ParseString(Json, i)
+        
+        SkipNull Json, i
+        If Mid(Json, i, 1) <> ":" Then Err.Raise 4000, , "Jsonのパースに失敗"
+        i = i + 1
+        
+        SkipNull Json, i
+        Select Case Mid(Json, i, 1)
+        Case """"
+            i = i + 1
+            Let Obj(Key) = ParseString(Json, i)
+        Case "{"
+            i = i + 1
+            Set Obj(Key) = ParseObject(Json, i)
+        Case "["
+            i = i + 1
+            Set Obj(Key) = ParseArray(Json, i)
+        End Select
+        
+        SkipNull Json, i
+        
+        Select Case Mid(Json, i, 1)
+        Case ","
+            i = i + 1
+        Case "}"
+            i = i + 1
+            Set ParseObject = Obj
+            Exit Do
+        End Select
+    Loop
+End Function
+
+Private Function ParseArray(Json As String, ByRef i)
+    Dim Arr As Collection
+    Set Arr = New Collection
+    
+     Do
+        SkipNull Json, i
+        Select Case Mid(Json, i, 1)
+        Case """"
+            i = i + 1
+            Arr.Add ParseString(Json, i)
+        Case "{"
+            i = i + 1
+            Arr.Add ParseObject(Json, i)
+        Case "["
+            i = i + 1
+            Arr.Add ParseArray(Json, i)
+        End Select
+        
+        SkipNull Json, i
+        
+        Select Case Mid(Json, i, 1)
+        Case ","
+            i = i + 1
+        Case "]"
+            i = i + 1
+            Set ParseArray = Arr
+            Exit Do
+        End Select
+    Loop
+End Function
+
+Private Function ParseString(Json, i) As String
+    Dim s As String
+    ParseString = ""
+    Do
+        s = Mid(Json, i, 1)
+        If s = """" Then
+            i = i + 1
+            Exit Do
+        End If
+        ParseString = ParseString & s
+        i = i + 1
+    Loop
+End Function
