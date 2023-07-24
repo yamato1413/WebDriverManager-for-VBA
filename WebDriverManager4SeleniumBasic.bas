@@ -410,7 +410,7 @@ End Sub
 Function ParseJson(Json As String) As Object
     Dim i As Long
     i = 1
-    SkipNull Json, i
+    SkipSpace Json, i
     Select Case Mid(Json, i, 1)
     Case "{"
         i = i + 1
@@ -437,16 +437,16 @@ Private Function ParseObject(Json As String, ByRef i) As Object
     Dim Key
     
     Do
-        SkipNull Json, i
+        SkipSpace Json, i
         If Mid(Json, i, 1) <> """" Then Err.Raise 4000, , "Jsonのパースに失敗"
         i = i + 1
         Key = ParseString(Json, i)
         
-        SkipNull Json, i
+        SkipSpace Json, i
         If Mid(Json, i, 1) <> ":" Then Err.Raise 4000, , "Jsonのパースに失敗"
         i = i + 1
         
-        SkipNull Json, i
+        SkipSpace Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
@@ -459,7 +459,7 @@ Private Function ParseObject(Json As String, ByRef i) As Object
             Obj(Key) = ParseArray(Json, i)
         End Select
         
-        SkipNull Json, i
+        SkipSpace Json, i
         
         Select Case Mid(Json, i, 1)
         Case ","
@@ -479,7 +479,7 @@ Private Function ParseArray(Json As String, ByRef i) As Variant
     Arr = Array()
     
      Do
-        SkipNull Json, i
+        SkipSpace Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
@@ -495,7 +495,7 @@ Private Function ParseArray(Json As String, ByRef i) As Variant
             Arr(UBound(Arr)) = ParseArray(Json, i)
         End Select
         
-        SkipNull Json, i
+        SkipSpace Json, i
         
         Select Case Mid(Json, i, 1)
         Case ","
