@@ -162,10 +162,10 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
-    Dim ret As Long
+    Dim Ret As Long
     DeleteUrlCacheEntry url
-    ret = URLDownloadToFile(0, url, PathSaveTo, 0, 0)
-    If ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
+    Ret = URLDownloadToFile(0, url, PathSaveTo, 0, 0)
+    If Ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
     DownloadWebDriver = PathSaveTo
 End Function
 
@@ -297,21 +297,21 @@ End Sub
 
 Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
     
-    Dim driverPath As String
-    driverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
+    Dim DriverPath As String
+    DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
     
     '// アップデート処理
-    If Not IsLatestDriver(Browser, driverPath) Then
+    If Not IsLatestDriver(Browser, DriverPath) Then
         Dim TmpDriver As String
-        If fso.FileExists(driverPath) Then TmpDriver = BuckupTempDriver(driverPath)
+        If fso.FileExists(DriverPath) Then TmpDriver = BuckupTempDriver(DriverPath)
         
-        Call InstallWebDriver(Browser, driverPath)
+        Call InstallWebDriver(Browser, DriverPath)
     End If
     
     On Error GoTo Catch
     Select Case Browser
-        Case BrowserName.Chrome: Driver.Chrome driverPath
-        Case BrowserName.Edge:   Driver.Edge driverPath
+        Case BrowserName.Chrome: Driver.Chrome DriverPath
+        Case BrowserName.Edge:   Driver.Edge DriverPath
     End Select
     Driver.OpenBrowser
     
@@ -319,21 +319,21 @@ Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional Custom
     Exit Sub
     
 Catch:
-    If TmpDriver <> "" Then Call RollbackDriver(TmpDriver, driverPath)
+    If TmpDriver <> "" Then Call RollbackDriver(TmpDriver, DriverPath)
     Err.Raise Err.Number, , Err.Description
     
 End Sub
 
 
 '// ドライバーのバージョンを調べる
-Function DriverVersion(driverPath As String) As String
+Function DriverVersion(DriverPath As String) As String
     
-    If Not fso.FileExists(driverPath) Then DriverVersion = "": Exit Function
+    If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
     
     Dim TempFile
     Dim VersionInfo
     TempFile = Environ$("TMP") & "\DriverVersion_" & Format$(Now, "YYYYMMDDHHMMSS") & ".txt"
-    CreateObject("WScript.Shell").Run "cmd /c " & driverPath & " -version >" & TempFile, 0, True
+    CreateObject("WScript.Shell").Run "cmd /c " & DriverPath & " -version >" & TempFile, 0, True
     
     With fso.OpenTextFile(TempFile)
         VersionInfo = .ReadLine
@@ -350,38 +350,38 @@ Function DriverVersion(driverPath As String) As String
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
     
     On Error Resume Next
-    DriverVersion = reg.Execute(VersionInfo)(0).value
+    DriverVersion = reg.Execute(VersionInfo)(0).Value
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
-Function IsLatestDriver(Browser As BrowserName, driverPath As String) As Boolean
+Function IsLatestDriver(Browser As BrowserName, DriverPath As String) As Boolean
     Select Case Browser
     Case BrowserName.Edge
-        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(driverPath)
+        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(DriverPath)
     
     '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
     Case BrowserName.Chrome
-        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(driverPath)
+        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(DriverPath)
     
     End Select
 End Function
 
 '// WebDriverを一時フォルダに退避させる
-Function BuckupTempDriver(driverPath As String) As String
+Function BuckupTempDriver(DriverPath As String) As String
     Dim TempFolder As String
-    TempFolder = fso.BuildPath(fso.GetParentFolderName(driverPath), fso.GetTempName)
+    TempFolder = fso.BuildPath(fso.GetParentFolderName(DriverPath), fso.GetTempName)
     fso.CreateFolder TempFolder
     
     Dim TempDriver As String
-    TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(driverPath))
-    fso.MoveFile driverPath, TempDriver
+    TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(DriverPath))
+    fso.MoveFile DriverPath, TempDriver
     
     BuckupTempDriver = TempDriver
 End Function
 
 '// 一時的に取っておいた古いWebDriverを一時フォルダからWebDriver置き場に戻す
-Sub RollbackDriver(TempDriverPath As String, driverPath As String)
-    fso.CopyFile TempDriverPath, driverPath, True
+Sub RollbackDriver(TempDriverPath As String, DriverPath As String)
+    fso.CopyFile TempDriverPath, DriverPath, True
     fso.DeleteFolder fso.GetParentFolderName(TempDriverPath)
 End Sub
 
@@ -393,41 +393,38 @@ End Sub
 '簡易的なJsonパーサー
 Function ParseJson(Json As String) As Object
     Dim i As Long
-    Dim s0 As String
-    Dim s1 As String
     i = 1
-    Do While i <= Len(Json)
-        SkipNull Json, i
-        Select Case Mid(Json, i, 1)
-        Case "{"
-            i = i + 1
-            Set ParseJson = ParseObject(Json, i)
-            Exit Function
-        End Select
-    Loop
-    
+    SkipNull Json, i
+    Select Case Mid(Json, i, 1)
+    Case "{"
+        i = i + 1
+        Set ParseJson = ParseObject(Json, i)
+    Case Else
+        Err.Raise 4000, , "Jsonのパースに失敗"
+    End Select
 End Function
 
 Private Sub SkipNull(Json, ByRef i)
-    Dim s As String
-    s = Mid(Json, i, 1)
-    Do While s = " " Or s = vbCr Or s = vbLf Or s = vbTab
-        i = i + 1
-        s = Mid(Json, i, 1)
+    Do
+        Select Case Mid(Json, i, 1)
+        Case " ", vbCr, vbLf, vbTab
+            i = i + 1
+        Case Else
+            Exit Sub
+        End Select
     Loop
-    
 End Sub
 
-Private Function ParseObject(Json As String, ByRef i)
+Private Function ParseObject(Json As String, ByRef i) As Object
     Dim Obj As Object
     Set Obj = CreateObject("Scripting.Dictionary")
-    Dim key
+    Dim Key
     
     Do
         SkipNull Json, i
         If Mid(Json, i, 1) <> """" Then Err.Raise 4000, , "Jsonのパースに失敗"
         i = i + 1
-        key = ParseString(Json, i)
+        Key = ParseString(Json, i)
         
         SkipNull Json, i
         If Mid(Json, i, 1) <> ":" Then Err.Raise 4000, , "Jsonのパースに失敗"
@@ -437,13 +434,13 @@ Private Function ParseObject(Json As String, ByRef i)
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            Let Obj(key) = ParseString(Json, i)
+            Obj(Key) = ParseString(Json, i)
         Case "{"
             i = i + 1
-            Set Obj(key) = ParseObject(Json, i)
+            Set Obj(Key) = ParseObject(Json, i)
         Case "["
             i = i + 1
-            Set Obj(key) = ParseArray(Json, i)
+            Obj(Key) = ParseArray(Json, i)
         End Select
         
         SkipNull Json, i
@@ -454,27 +451,32 @@ Private Function ParseObject(Json As String, ByRef i)
         Case "}"
             i = i + 1
             Set ParseObject = Obj
-            Exit Do
+            Exit Function
+        Case Else
+            Err.Raise 4000, , "Jsonのパースに失敗"
         End Select
     Loop
 End Function
 
-Private Function ParseArray(Json As String, ByRef i)
-    Dim Arr As Collection
-    Set Arr = New Collection
+Private Function ParseArray(Json As String, ByRef i) As Variant
+    Dim Arr
+    Arr = Array()
     
      Do
         SkipNull Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            Arr.Add ParseString(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Arr(UBound(Arr)) = ParseString(Json, i)
         Case "{"
             i = i + 1
-            Arr.Add ParseObject(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Set Arr(UBound(Arr)) = ParseObject(Json, i)
         Case "["
             i = i + 1
-            Arr.Add ParseArray(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Arr(UBound(Arr)) = ParseArray(Json, i)
         End Select
         
         SkipNull Json, i
@@ -484,8 +486,10 @@ Private Function ParseArray(Json As String, ByRef i)
             i = i + 1
         Case "]"
             i = i + 1
-            Set ParseArray = Arr
-            Exit Do
+            ParseArray = Arr
+            Exit Function
+        Case Else
+            Err.Raise 4000, , "Jsonのパースに失敗"
         End Select
     Loop
 End Function
@@ -497,7 +501,7 @@ Private Function ParseString(Json, i) As String
         s = Mid(Json, i, 1)
         If s = """" Then
             i = i + 1
-            Exit Do
+            Exit Function
         End If
         ParseString = ParseString & s
         i = i + 1

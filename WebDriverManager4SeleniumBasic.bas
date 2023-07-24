@@ -366,7 +366,7 @@ Function DriverVersion(DriverPath As String) As String
     reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
     
     On Error Resume Next
-    DriverVersion = reg.Execute(VersionInfo)(0).value
+    DriverVersion = reg.Execute(VersionInfo)(0).Value
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
@@ -409,33 +409,29 @@ End Sub
 '簡易的なJsonパーサー
 Function ParseJson(Json As String) As Object
     Dim i As Long
-    Dim s0 As String
-    Dim s1 As String
     i = 1
-    Do While i <= Len(Json)
-        SkipNull Json, i
-        Select Case Mid(Json, i, 1)
-        Case "{"
-            i = i + 1
-            Set ParseJson = ParseObject(Json, i)
-            Exit Function
-        End Select
-        
-    Loop
-    
+    SkipNull Json, i
+    Select Case Mid(Json, i, 1)
+    Case "{"
+        i = i + 1
+        Set ParseJson = ParseObject(Json, i)
+    Case Else
+        Err.Raise 4000, , "Jsonのパースに失敗"
+    End Select
 End Function
 
 Private Sub SkipNull(Json, ByRef i)
-    Dim s As String
-    s = Mid(Json, i, 1)
-    Do While s = " " Or s = vbCr Or s = vbLf Or s = vbTab
-        i = i + 1
-        s = Mid(Json, i, 1)
+    Do
+        Select Case Mid(Json, i, 1)
+        Case " ", vbCr, vbLf, vbTab
+            i = i + 1
+        Case Else
+            Exit Sub
+        End Select
     Loop
-    
 End Sub
 
-Private Function ParseObject(Json As String, ByRef i)
+Private Function ParseObject(Json As String, ByRef i) As Object
     Dim Obj As Object
     Set Obj = CreateObject("Scripting.Dictionary")
     Dim Key
@@ -454,13 +450,13 @@ Private Function ParseObject(Json As String, ByRef i)
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            Let Obj(Key) = ParseString(Json, i)
+            Obj(Key) = ParseString(Json, i)
         Case "{"
             i = i + 1
             Set Obj(Key) = ParseObject(Json, i)
         Case "["
             i = i + 1
-            Set Obj(Key) = ParseArray(Json, i)
+            Obj(Key) = ParseArray(Json, i)
         End Select
         
         SkipNull Json, i
@@ -471,27 +467,32 @@ Private Function ParseObject(Json As String, ByRef i)
         Case "}"
             i = i + 1
             Set ParseObject = Obj
-            Exit Do
+            Exit Function
+        Case Else
+            Err.Raise 4000, , "Jsonのパースに失敗"
         End Select
     Loop
 End Function
 
-Private Function ParseArray(Json As String, ByRef i)
-    Dim Arr As Collection
-    Set Arr = New Collection
+Private Function ParseArray(Json As String, ByRef i) As Variant
+    Dim Arr
+    Arr = Array()
     
      Do
         SkipNull Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            Arr.Add ParseString(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Arr(UBound(Arr)) = ParseString(Json, i)
         Case "{"
             i = i + 1
-            Arr.Add ParseObject(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Set Arr(UBound(Arr)) = ParseObject(Json, i)
         Case "["
             i = i + 1
-            Arr.Add ParseArray(Json, i)
+            ReDim Preserve Arr(0 To UBound(Arr) + 1)
+            Arr(UBound(Arr)) = ParseArray(Json, i)
         End Select
         
         SkipNull Json, i
@@ -501,8 +502,10 @@ Private Function ParseArray(Json As String, ByRef i)
             i = i + 1
         Case "]"
             i = i + 1
-            Set ParseArray = Arr
-            Exit Do
+            ParseArray = Arr
+            Exit Function
+        Case Else
+            Err.Raise 4000, , "Jsonのパースに失敗"
         End Select
     Loop
 End Function
@@ -514,7 +517,7 @@ Private Function ParseString(Json, i) As String
         s = Mid(Json, i, 1)
         If s = """" Then
             i = i + 1
-            Exit Do
+            Exit Function
         End If
         ParseString = ParseString & s
         i = i + 1
