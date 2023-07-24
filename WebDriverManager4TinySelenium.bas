@@ -76,7 +76,7 @@ Public Property Get WebDriverPath(Browser As BrowserName) As String
     End Select
 End Property
 
-Public Property Get BrowserVersion(Browser As BrowserName)
+Public Property Get BrowserVersion(Browser As BrowserName) As String
     Dim EdgePath1 As String
     Dim EdgePath2 As String
     Dim EdgePath3 As String
@@ -113,19 +113,19 @@ Public Property Get BrowserVersion(Browser As BrowserName)
 End Property
 
 '// 出力例　"94"
-Public Property Get ToMajor(Version As String)
+Public Property Get ToMajor(Version As String) As String
     Dim Vers
     Vers = Split(Version, ".")
     ToMajor = Vers(0)
 End Property
 '// 出力例　"94.0"
-Public Property Get ToMinor(Version As String)
+Public Property Get ToMinor(Version As String) As String
     Dim Vers
     Vers = Split(Version, ".")
     ToMinor = Join(Array(Vers(0), Vers(1)), ".")
 End Property
 '// 出力例　"94.0.992"
-Public Property Get ToBuild(Version As String)
+Public Property Get ToBuild(Version As String) As String
     Dim Vers
     Vers = Split(Version, ".")
     ToBuild = Join(Array(Vers(0), Vers(1), Vers(2)), ".")
@@ -404,7 +404,7 @@ Function ParseJson(Json As String) As Object
     End Select
 End Function
 
-Private Sub SkipNull(Json, ByRef i)
+Private Sub SkipSpace(Json, ByRef i)
     Do
         Select Case Mid(Json, i, 1)
         Case " ", vbCr, vbLf, vbTab
