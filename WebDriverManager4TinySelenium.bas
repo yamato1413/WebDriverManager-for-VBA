@@ -234,7 +234,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     
     DeleteUrlCacheEntry url
     
-    Dim http As XMLHTTP60
+    Dim http 'As XMLHTTP60
     Set http = CreateObject("MSXML2.ServerXMLHTTP")
     http.Open "GET", url, False
     http.send
