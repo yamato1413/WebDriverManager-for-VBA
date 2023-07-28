@@ -8,42 +8,112 @@ End Enum
 
 #Const DEV = 0
 
-'// ファイルダウンロード用のWin32API
-#If VBA7 Then
-Private Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
-    (ByVal pCaller As LongPtr, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As LongPtr) As Long
-Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
-#Else
-Private Declare Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
-    (ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
-Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
-#End If
+Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" ( _
+    ByVal lpszUrlName As String) As Long
+    
+Private Declare PtrSafe Function CreatePipe Lib "kernel32" ( _
+    ByRef phReadPipe As LongPtr, _
+    ByRef phWritePipe As LongPtr, _
+    ByRef lpPipeAttributes As SECURITY_ATTRIBUTES, _
+    ByVal nSize As Long) As Long
+    
+Private Declare PtrSafe Function CreateProcess Lib "kernel32" Alias "CreateProcessA" ( _
+    ByVal lpApplicationName As String, _
+    ByVal lpCommandLine As String, _
+    ByVal lpProcessAttributes As Any, _
+    ByVal lpThreadAttributes As Any, _
+    ByVal bInheritHandles As Long, _
+    ByVal dwCreationFlags As Long, _
+    ByRef lpEnvironment As Any, _
+    ByVal lpCurrentDriectory As String, _
+    ByRef lpSTARTUPINFO As STARTUPINFO, _
+    ByRef lpProcessInformation As PROCESS_INFORMATION) As Long
+    
+Private Declare PtrSafe Function CloseHandle Lib "kernel32" ( _
+    ByVal hObject As LongPtr) As Long
+    
+Private Declare PtrSafe Function WaitForSingleObject Lib "kernel32" ( _
+    ByVal hHandle As LongPtr, _
+    ByVal dwMilliseconds As Long) As Long
+    
+Private Declare PtrSafe Function PeekNamedPipe Lib "kernel32" ( _
+    ByVal hNamedPipe As LongPtr, _
+    ByRef lpBuffer As Any, _
+    ByVal nBufferSize As Long, _
+    ByRef lpBytesRead As Long, _
+    ByRef lpTotalBytesAvail As Long, _
+    ByRef lpBytesLeftThisMessage As Long) As Long
+    
+Private Declare PtrSafe Function ReadFile Lib "kernel32" (ByVal hFile As LongPtr, _
+    ByRef lpBuffer As Any, _
+    ByVal nNumberOfBytesToRead As Long, _
+    ByRef lpNumberOfBytesRead As Long, _
+    ByVal lpOverlapped As Any) As Long
+    
+Private Type SECURITY_ATTRIBUTES
+    nLength As Long
+    lpSecurityDescriptor As LongPtr
+    bInheritHandle As Long
+End Type
 
+Private Type STARTUPINFO
+    cb As Long
+    lpReserved As String
+    lpDesktop As String
+    lpTitle As String
+    dwX As Long
+    dwY As Long
+    dwXSize As Long
+    dwYSize As Long
+    dwXCountChars As Long
+    dwYCountChars As Long
+    dwFillAttribute As Long
+    dwFlags As Long
+    wShowWindow As Integer
+    cbReserved2 As Integer
+    lpReserved2 As LongPtr
+    hStdInput As LongPtr
+    hStdOutput As LongPtr
+    hStdError As LongPtr
+End Type
 
+Private Type PROCESS_INFORMATION
+    hProcess As LongPtr
+    hThread As LongPtr
+    dwProcessId As Long
+    dwThreadId As Long
+End Type
+    
+Private Const STARTF_USESTDHANDLES = &H100
+Private Const STARTF_USESHOWWINDOW = &H1
+Private Const SW_HIDE = 0
 
+Private Const IsSuccess = 0
+Private Const Stdout = 1
 
 #If DEV Then
-    Dim fso As New Scripting.FileSystemObject
-    Dim wsh As New WshShell
-    Dim shell As New Shell32.shell
+Dim fso As New Scripting.FileSystemObject
+Dim wsh As New WshShell
+Dim shell As New Shell32.shell
+
 #Else
-    Private Property Get fso() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("Scripting.FileSystemObject")
-        Set fso = Obj
-    End Property
-    
-    Private Property Get wsh() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("WScript.Shell")
-        Set wsh = Obj
-    End Property
-    
-    Private Property Get shell() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("Shell.Application")
-        Set shell = Obj
-    End Property
+Private Property Get fso() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("Scripting.FileSystemObject")
+    Set fso = Obj
+End Property
+
+Private Property Get wsh() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("WScript.Shell")
+    Set wsh = Obj
+End Property
+
+Private Property Get shell() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("Shell.Application")
+    Set shell = Obj
+End Property
 #End If
 
 
@@ -76,7 +146,7 @@ Public Property Get WebDriverPath(Browser As BrowserName) As String
     End Select
 End Property
 
-Public Property Get BrowserVersion(Browser As BrowserName) As String
+Public Property Get BrowserVersion(Browser As BrowserName)
     Dim EdgePath1 As String
     Dim EdgePath2 As String
     Dim EdgePath3 As String
@@ -113,19 +183,19 @@ Public Property Get BrowserVersion(Browser As BrowserName) As String
 End Property
 
 '// 出力例　"94"
-Public Property Get ToMajor(Version As String) As String
+Public Property Get ToMajor(Version As String)
     Dim Vers
     Vers = Split(Version, ".")
     ToMajor = Vers(0)
 End Property
 '// 出力例　"94.0"
-Public Property Get ToMinor(Version As String) As String
+Public Property Get ToMinor(Version As String)
     Dim Vers
     Vers = Split(Version, ".")
     ToMinor = Join(Array(Vers(0), Vers(1)), ".")
 End Property
 '// 出力例　"94.0.992"
-Public Property Get ToBuild(Version As String) As String
+Public Property Get ToBuild(Version As String)
     Dim Vers
     Vers = Split(Version, ".")
     ToBuild = Join(Array(Vers(0), Vers(1), Vers(2)), ".")
@@ -162,10 +232,29 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
-    Dim Ret As Long
     DeleteUrlCacheEntry url
-    Ret = URLDownloadToFile(0, url, PathSaveTo, 0, 0)
-    If Ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
+    
+    Dim http As XMLHTTP60
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    http.Open "GET", url, False
+    http.send
+    
+    If http.statusText <> "OK" Then
+        Err.Raise 4001, , "ダウンロード失敗 : " & url
+        Exit Function
+    End If
+    
+    Const adTypeBinary = 1
+    Const adSaveCreateNotExist = 2
+    With CreateObject("ADODB.Stream")
+        .Type = adTypeBinary
+        .Open
+        .Position = 0
+        .Write http.responseBody
+        .SaveToFile PathSaveTo, adSaveCreateNotExist
+        .Close
+    End With
+
     DownloadWebDriver = PathSaveTo
 End Function
 
@@ -297,21 +386,21 @@ End Sub
 
 Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
     
-    Dim DriverPath As String
-    DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
+    Dim driverPath As String
+    driverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
     
     '// アップデート処理
-    If Not IsLatestDriver(Browser, DriverPath) Then
+    If Not IsLatestDriver(Browser, driverPath) Then
         Dim TmpDriver As String
-        If fso.FileExists(DriverPath) Then TmpDriver = BuckupTempDriver(DriverPath)
+        If fso.FileExists(driverPath) Then TmpDriver = BuckupTempDriver(driverPath)
         
-        Call InstallWebDriver(Browser, DriverPath)
+        Call InstallWebDriver(Browser, driverPath)
     End If
     
     On Error GoTo Catch
     Select Case Browser
-        Case BrowserName.Chrome: Driver.Chrome DriverPath
-        Case BrowserName.Edge:   Driver.Edge DriverPath
+        Case BrowserName.Chrome: Driver.Chrome driverPath
+        Case BrowserName.Edge:   Driver.Edge driverPath
     End Select
     Driver.OpenBrowser
     
@@ -319,69 +408,60 @@ Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional Custom
     Exit Sub
     
 Catch:
-    If TmpDriver <> "" Then Call RollbackDriver(TmpDriver, DriverPath)
+    If TmpDriver <> "" Then Call RollbackDriver(TmpDriver, driverPath)
     Err.Raise Err.Number, , Err.Description
     
 End Sub
 
 
 '// ドライバーのバージョンを調べる
-Function DriverVersion(DriverPath As String) As String
+Function DriverVersion(driverPath As String) As String
     
-    If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
+    If Not fso.FileExists(driverPath) Then DriverVersion = "": Exit Function
     
-    Dim TempFile
-    Dim VersionInfo
-    TempFile = Environ$("TMP") & "\DriverVersion_" & Format$(Now, "YYYYMMDDHHMMSS") & ".txt"
-    CreateObject("WScript.Shell").Run "cmd /c " & DriverPath & " -version >" & TempFile, 0, True
-    
-    With fso.OpenTextFile(TempFile)
-        VersionInfo = .ReadLine
-        .Close
-    End With
-    
-    fso.DeleteFile TempFile, True
-    
-    'バージョン情報が取得できない古いバージョンがある
-    If VersionInfo = "" Then DriverVersion = "": Exit Function
-    
-    Dim reg
-    Set reg = CreateObject("VBScript.RegExp")
-    reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
-    
-    On Error Resume Next
-    DriverVersion = reg.Execute(VersionInfo)(0).Value
+    Dim Res
+    Res = ReadStdOut(driverPath & " --version")
+    If Res(IsSuccess) Then
+        Dim reg
+        Set reg = CreateObject("VBScript.RegExp")
+        reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
+        
+        On Error Resume Next
+        DriverVersion = reg.Execute(Res(Stdout))(0).value
+    Else
+        DriverVersion = ""
+    End If
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
-Function IsLatestDriver(Browser As BrowserName, DriverPath As String) As Boolean
+Function IsLatestDriver(Browser As BrowserName, driverPath As String) As Boolean
     Select Case Browser
     Case BrowserName.Edge
-        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(DriverPath)
+        IsLatestDriver = BrowserVersion(Edge) = DriverVersion(driverPath)
     
     '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
     Case BrowserName.Chrome
-        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(DriverPath)
+        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(driverPath)
     
     End Select
 End Function
 
 '// WebDriverを一時フォルダに退避させる
-Function BuckupTempDriver(DriverPath As String) As String
+Function BuckupTempDriver(driverPath As String) As String
     Dim TempFolder As String
-    TempFolder = fso.BuildPath(fso.GetParentFolderName(DriverPath), fso.GetTempName)
+    TempFolder = fso.BuildPath(fso.GetParentFolderName(driverPath), fso.GetTempName)
     fso.CreateFolder TempFolder
     
     Dim TempDriver As String
-    TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(DriverPath))
-    fso.MoveFile DriverPath, TempDriver
+    TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(driverPath))
+    fso.MoveFile driverPath, TempDriver
     
     BuckupTempDriver = TempDriver
 End Function
 
 '// 一時的に取っておいた古いWebDriverを一時フォルダからWebDriver置き場に戻す
-Sub RollbackDriver(TempDriverPath As String, DriverPath As String)
-    fso.CopyFile TempDriverPath, DriverPath, True
+Sub RollbackDriver(TempDriverPath As String, driverPath As String)
+    fso.CopyFile TempDriverPath, driverPath, True
     fso.DeleteFolder fso.GetParentFolderName(TempDriverPath)
 End Sub
 
@@ -393,57 +473,60 @@ End Sub
 '簡易的なJsonパーサー
 Function ParseJson(Json As String) As Object
     Dim i As Long
+    Dim s0 As String
+    Dim s1 As String
     i = 1
-    SkipSpace Json, i
-    Select Case Mid(Json, i, 1)
-    Case "{"
-        i = i + 1
-        Set ParseJson = ParseObject(Json, i)
-    Case Else
-        Err.Raise 4000, , "Jsonのパースに失敗"
-    End Select
-End Function
-
-Private Sub SkipSpace(Json, ByRef i)
-    Do
+    Do While i <= Len(Json)
+        SkipNull Json, i
         Select Case Mid(Json, i, 1)
-        Case " ", vbCr, vbLf, vbTab
+        Case "{"
             i = i + 1
-        Case Else
-            Exit Sub
+            Set ParseJson = ParseObject(Json, i)
+            Exit Function
         End Select
     Loop
+    
+End Function
+
+Private Sub SkipNull(Json, ByRef i)
+    Dim s As String
+    s = Mid(Json, i, 1)
+    Do While s = " " Or s = vbCr Or s = vbLf Or s = vbTab
+        i = i + 1
+        s = Mid(Json, i, 1)
+    Loop
+    
 End Sub
 
-Private Function ParseObject(Json As String, ByRef i) As Object
+Private Function ParseObject(Json As String, ByRef i)
     Dim Obj As Object
     Set Obj = CreateObject("Scripting.Dictionary")
-    Dim Key
+    Dim key
     
     Do
-        SkipSpace Json, i
+        SkipNull Json, i
         If Mid(Json, i, 1) <> """" Then Err.Raise 4000, , "Jsonのパースに失敗"
         i = i + 1
-        Key = ParseString(Json, i)
+        key = ParseString(Json, i)
         
-        SkipSpace Json, i
+        SkipNull Json, i
         If Mid(Json, i, 1) <> ":" Then Err.Raise 4000, , "Jsonのパースに失敗"
         i = i + 1
         
-        SkipSpace Json, i
+        SkipNull Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            Obj(Key) = ParseString(Json, i)
+            Let Obj(key) = ParseString(Json, i)
         Case "{"
             i = i + 1
-            Set Obj(Key) = ParseObject(Json, i)
+            Set Obj(key) = ParseObject(Json, i)
         Case "["
             i = i + 1
-            Obj(Key) = ParseArray(Json, i)
+            Set Obj(key) = ParseArray(Json, i)
         End Select
         
-        SkipSpace Json, i
+        SkipNull Json, i
         
         Select Case Mid(Json, i, 1)
         Case ","
@@ -451,45 +534,38 @@ Private Function ParseObject(Json As String, ByRef i) As Object
         Case "}"
             i = i + 1
             Set ParseObject = Obj
-            Exit Function
-        Case Else
-            Err.Raise 4000, , "Jsonのパースに失敗"
+            Exit Do
         End Select
     Loop
 End Function
 
-Private Function ParseArray(Json As String, ByRef i) As Variant
-    Dim Arr
-    Arr = Array()
+Private Function ParseArray(Json As String, ByRef i)
+    Dim Arr As Collection
+    Set Arr = New Collection
     
      Do
-        SkipSpace Json, i
+        SkipNull Json, i
         Select Case Mid(Json, i, 1)
         Case """"
             i = i + 1
-            ReDim Preserve Arr(0 To UBound(Arr) + 1)
-            Arr(UBound(Arr)) = ParseString(Json, i)
+            Arr.Add ParseString(Json, i)
         Case "{"
             i = i + 1
-            ReDim Preserve Arr(0 To UBound(Arr) + 1)
-            Set Arr(UBound(Arr)) = ParseObject(Json, i)
+            Arr.Add ParseObject(Json, i)
         Case "["
             i = i + 1
-            ReDim Preserve Arr(0 To UBound(Arr) + 1)
-            Arr(UBound(Arr)) = ParseArray(Json, i)
+            Arr.Add ParseArray(Json, i)
         End Select
         
-        SkipSpace Json, i
+        SkipNull Json, i
         
         Select Case Mid(Json, i, 1)
         Case ","
             i = i + 1
         Case "]"
             i = i + 1
-            ParseArray = Arr
-            Exit Function
-        Case Else
-            Err.Raise 4000, , "Jsonのパースに失敗"
+            Set ParseArray = Arr
+            Exit Do
         End Select
     Loop
 End Function
@@ -501,9 +577,73 @@ Private Function ParseString(Json, i) As String
         s = Mid(Json, i, 1)
         If s = """" Then
             i = i + 1
-            Exit Function
+            Exit Do
         End If
         ParseString = ParseString & s
         i = i + 1
     Loop
 End Function
+
+'コマンドを実行した時の標準出力を読み取る関数
+'戻り値 Array(成功したかどうか,標準出力)
+Function ReadStdOut(Cmd As String)
+    Const FAILED = 0
+    Dim Result_IsSuccess As Boolean
+    Dim Result_StdOut    As String
+    
+    Dim ReadPipe  As LongPtr
+    Dim WritePipe As LongPtr
+    Dim sa As SECURITY_ATTRIBUTES
+    sa.nLength = Len(sa)
+    sa.bInheritHandle = 1
+    sa.lpSecurityDescriptor = 0
+    
+    If CreatePipe(ReadPipe, WritePipe, sa, 0) = FAILED Then
+        GoTo finally
+    End If
+    
+    Dim si As STARTUPINFO
+    Dim pi As PROCESS_INFORMATION
+    si.cb = Len(si)
+    si.dwFlags = STARTF_USESTDHANDLES + STARTF_USESHOWWINDOW
+    si.hStdInput = ReadPipe
+    si.hStdOutput = WritePipe
+    si.hStdError = WritePipe
+    si.wShowWindow = SW_HIDE
+    
+    Cmd = "/c " & Cmd
+    If CreateProcess("C:\Windows\System32\cmd.exe", Cmd, 0&, 0&, 1&, 0&, 0&, "C:\", si, pi) = FAILED Then
+        GoTo finally
+    End If
+    
+    CloseHandle pi.hThread
+    pi.hThread = 0
+    
+    If WaitForSingleObject(pi.hProcess, 1000) <> 0 Then
+        GoTo finally
+    End If
+    
+    Dim ReadBuf() As Byte
+    Dim TotalLength As Long
+    Dim Length As Long
+    If PeekNamedPipe(ReadPipe, 0, 0, 0, TotalLength, 0) = FAILED Then
+        GoTo finally
+    End If
+    If 0 < TotalLength Then
+        ReDim ReadBuf(0 To TotalLength - 1) As Byte
+        If ReadFile(ReadPipe, ReadBuf(0), UBound(ReadBuf), 0&, 0&) = FAILED Then
+            GoTo finally
+        End If
+    End If
+    
+    Result_IsSuccess = True
+    Result_StdOut = StrConv(ReadBuf, vbUnicode)
+
+finally:
+    If WritePipe <> 0 Then CloseHandle WritePipe
+    If ReadPipe <> 0 Then CloseHandle ReadPipe
+    If pi.hProcess <> 0 Then CloseHandle pi.hProcess
+    
+    ReadStdOut = Array(Result_IsSuccess, Result_StdOut)
+End Function
+

@@ -8,42 +8,112 @@ End Enum
 
 #Const DEV = 0
 
-'// ファイルダウンロード用のWin32API
-#If VBA7 Then
-Private Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
-    (ByVal pCaller As LongPtr, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As LongPtr) As Long
-Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
-#Else
-Private Declare Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" _
-    (ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
-Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" (ByVal lpszUrlName As String) As Long
-#End If
+Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" ( _
+    ByVal lpszUrlName As String) As Long
+    
+Private Declare PtrSafe Function CreatePipe Lib "kernel32" ( _
+    ByRef phReadPipe As LongPtr, _
+    ByRef phWritePipe As LongPtr, _
+    ByRef lpPipeAttributes As SECURITY_ATTRIBUTES, _
+    ByVal nSize As Long) As Long
+    
+Private Declare PtrSafe Function CreateProcess Lib "kernel32" Alias "CreateProcessA" ( _
+    ByVal lpApplicationName As String, _
+    ByVal lpCommandLine As String, _
+    ByVal lpProcessAttributes As Any, _
+    ByVal lpThreadAttributes As Any, _
+    ByVal bInheritHandles As Long, _
+    ByVal dwCreationFlags As Long, _
+    ByRef lpEnvironment As Any, _
+    ByVal lpCurrentDriectory As String, _
+    ByRef lpSTARTUPINFO As STARTUPINFO, _
+    ByRef lpProcessInformation As PROCESS_INFORMATION) As Long
+    
+Private Declare PtrSafe Function CloseHandle Lib "kernel32" ( _
+    ByVal hObject As LongPtr) As Long
+    
+Private Declare PtrSafe Function WaitForSingleObject Lib "kernel32" ( _
+    ByVal hHandle As LongPtr, _
+    ByVal dwMilliseconds As Long) As Long
+    
+Private Declare PtrSafe Function PeekNamedPipe Lib "kernel32" ( _
+    ByVal hNamedPipe As LongPtr, _
+    ByRef lpBuffer As Any, _
+    ByVal nBufferSize As Long, _
+    ByRef lpBytesRead As Long, _
+    ByRef lpTotalBytesAvail As Long, _
+    ByRef lpBytesLeftThisMessage As Long) As Long
+    
+Private Declare PtrSafe Function ReadFile Lib "kernel32" (ByVal hFile As LongPtr, _
+    ByRef lpBuffer As Any, _
+    ByVal nNumberOfBytesToRead As Long, _
+    ByRef lpNumberOfBytesRead As Long, _
+    ByVal lpOverlapped As Any) As Long
+    
+Private Type SECURITY_ATTRIBUTES
+    nLength As Long
+    lpSecurityDescriptor As LongPtr
+    bInheritHandle As Long
+End Type
 
+Private Type STARTUPINFO
+    cb As Long
+    lpReserved As String
+    lpDesktop As String
+    lpTitle As String
+    dwX As Long
+    dwY As Long
+    dwXSize As Long
+    dwYSize As Long
+    dwXCountChars As Long
+    dwYCountChars As Long
+    dwFillAttribute As Long
+    dwFlags As Long
+    wShowWindow As Integer
+    cbReserved2 As Integer
+    lpReserved2 As LongPtr
+    hStdInput As LongPtr
+    hStdOutput As LongPtr
+    hStdError As LongPtr
+End Type
 
+Private Type PROCESS_INFORMATION
+    hProcess As LongPtr
+    hThread As LongPtr
+    dwProcessId As Long
+    dwThreadId As Long
+End Type
+    
+Private Const STARTF_USESTDHANDLES = &H100
+Private Const STARTF_USESHOWWINDOW = &H1
+Private Const SW_HIDE = 0
 
+Private Const IsSuccess = 0
+Private Const Stdout = 1
 
 #If DEV Then
-    Dim fso As New Scripting.FileSystemObject
-    Dim wsh As New WshShell
-    Dim shell As New Shell32.shell
+Dim fso As New Scripting.FileSystemObject
+Dim wsh As New WshShell
+Dim shell As New Shell32.shell
+
 #Else
-    Private Property Get fso() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("Scripting.FileSystemObject")
-        Set fso = Obj
-    End Property
-    
-    Private Property Get wsh() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("WScript.Shell")
-        Set wsh = Obj
-    End Property
-    
-    Private Property Get shell() As Object
-        Static Obj As Object
-        If Obj Is Nothing Then Set Obj = CreateObject("Shell.Application")
-        Set shell = Obj
-    End Property
+Private Property Get fso() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("Scripting.FileSystemObject")
+    Set fso = Obj
+End Property
+
+Private Property Get wsh() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("WScript.Shell")
+    Set wsh = Obj
+End Property
+
+Private Property Get shell() As Object
+    Static Obj As Object
+    If Obj Is Nothing Then Set Obj = CreateObject("Shell.Application")
+    Set shell = Obj
+End Property
 #End If
 
 
@@ -178,10 +248,29 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
-    Dim Ret As Long
     DeleteUrlCacheEntry url
-    Ret = URLDownloadToFile(0, url, PathSaveTo, 0, 0)
-    If Ret <> 0 Then Err.Raise 4001, , "ダウンロード失敗 : " & url
+
+    Dim http As XMLHTTP60
+    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    http.Open "GET", url, False
+    http.send
+    
+    If http.statusText <> "OK" Then
+        Err.Raise 4001, , "ダウンロード失敗 : " & url
+        Exit Function
+    End If
+    
+    Const adTypeBinary = 1
+    Const adSaveCreateNotExist = 2
+    With CreateObject("ADODB.Stream")
+        .Type = adTypeBinary
+        .Open
+        .Position = 0
+        .Write http.responseBody
+        .SaveToFile PathSaveTo, adSaveCreateNotExist
+        .Close
+    End With
+
     DownloadWebDriver = PathSaveTo
 End Function
 
@@ -246,7 +335,7 @@ Public Function RequestWebDriverVersion(ChromeVer As String) As String
         Err.Raise 4003, , "適合ドライバーの情報を取得できませんでした"
         Exit Function
     End If
-    
+
     RequestWebDriverVersion = ParseJson(http.responseText)("builds")(ChromeVer)("version")
 End Function
 
@@ -346,27 +435,18 @@ Function DriverVersion(DriverPath As String) As String
     
     If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
     
-    Dim TempFile
-    Dim VersionInfo
-    TempFile = Environ$("TMP") & "\DriverVersion_" & Format$(Now, "YYYYMMDDHHMMSS") & ".txt"
-    CreateObject("WScript.Shell").Run "cmd /c " & DriverPath & " -version >" & TempFile, 0, True
-    
-    With fso.OpenTextFile(TempFile)
-        VersionInfo = .ReadLine
-        .Close
-    End With
-    
-    fso.DeleteFile TempFile, True
-    
-    'バージョン情報が取得できない古いバージョンがある
-    If VersionInfo = "" Then DriverVersion = "": Exit Function
-    
-    Dim reg
-    Set reg = CreateObject("VBScript.RegExp")
-    reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
-    
-    On Error Resume Next
-    DriverVersion = reg.Execute(VersionInfo)(0).Value
+    Dim Res
+    Res = ReadStdOut(DriverPath & " --version")
+    If Res(IsSuccess) Then
+        Dim reg
+        Set reg = CreateObject("VBScript.RegExp")
+        reg.Pattern = "\d+\.\d+\.\d+(\.\d+|)"
+        
+        On Error Resume Next
+        DriverVersion = reg.Execute(Res(Stdout))(0).value
+    Else
+        DriverVersion = ""
+    End If
 End Function
 
 '// 最新のドライバーがインストールされているか調べる
@@ -522,4 +602,67 @@ Private Function ParseString(Json, i) As String
         ParseString = ParseString & s
         i = i + 1
     Loop
+End Function
+
+'コマンドを実行した時の標準出力を読み取る関数
+'戻り値 Array(成功したかどうか,標準出力)
+Function ReadStdOut(Cmd As String)
+    Const FAILED = 0
+    Dim Result_IsSuccess As Boolean
+    Dim Result_StdOut    As String
+    
+    Dim ReadPipe  As LongPtr
+    Dim WritePipe As LongPtr
+    Dim sa As SECURITY_ATTRIBUTES
+    sa.nLength = Len(sa)
+    sa.bInheritHandle = 1
+    sa.lpSecurityDescriptor = 0
+    
+    If CreatePipe(ReadPipe, WritePipe, sa, 0) = FAILED Then
+        GoTo finally
+    End If
+    
+    Dim si As STARTUPINFO
+    Dim pi As PROCESS_INFORMATION
+    si.cb = Len(si)
+    si.dwFlags = STARTF_USESTDHANDLES + STARTF_USESHOWWINDOW
+    si.hStdInput = ReadPipe
+    si.hStdOutput = WritePipe
+    si.hStdError = WritePipe
+    si.wShowWindow = SW_HIDE
+    
+    Cmd = "/c " & Cmd
+    If CreateProcess("C:\Windows\System32\cmd.exe", Cmd, 0&, 0&, 1&, 0&, 0&, "C:\", si, pi) = FAILED Then
+        GoTo finally
+    End If
+    
+    CloseHandle pi.hThread
+    pi.hThread = 0
+    
+    If WaitForSingleObject(pi.hProcess, 1000) <> 0 Then
+        GoTo finally
+    End If
+    
+    Dim ReadBuf() As Byte
+    Dim TotalLength As Long
+    Dim Length As Long
+    If PeekNamedPipe(ReadPipe, 0, 0, 0, TotalLength, 0) = FAILED Then
+        GoTo finally
+    End If
+    If 0 < TotalLength Then
+        ReDim ReadBuf(0 To TotalLength - 1) As Byte
+        If ReadFile(ReadPipe, ReadBuf(0), UBound(ReadBuf), 0&, 0&) = FAILED Then
+            GoTo finally
+        End If
+    End If
+    
+    Result_IsSuccess = True
+    Result_StdOut = StrConv(ReadBuf, vbUnicode)
+
+finally:
+    If WritePipe <> 0 Then CloseHandle WritePipe
+    If ReadPipe <> 0 Then CloseHandle ReadPipe
+    If pi.hProcess <> 0 Then CloseHandle pi.hProcess
+    
+    ReadStdOut = Array(Result_IsSuccess, Result_StdOut)
 End Function
