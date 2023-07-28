@@ -436,7 +436,7 @@ Function DriverVersion(DriverPath As String) As String
     If Not fso.FileExists(DriverPath) Then DriverVersion = "": Exit Function
     
     Dim Res
-    Res = ReadStdOut(DriverPath & " --version")
+    Res = ReadStdOut("""" & DriverPath & """ --version")
     If Res(IsSuccess) Then
         Dim reg
         Set reg = CreateObject("VBScript.RegExp")
