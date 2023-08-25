@@ -234,12 +234,12 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     
     DeleteUrlCacheEntry url
     
-    Dim http 'As XMLHTTP60
-    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    Dim http
+    Set http = CreateObject("MSXML2.XMLHTTP")
     http.Open "GET", url, False
     http.send
     
-    If http.statusText <> "OK" Then
+    If http.status <> 200 Then
         Err.Raise 4001, , "ダウンロード失敗 : " & url
         Exit Function
     End If
@@ -297,35 +297,39 @@ End Function
 
 
 Public Function RequestWebDriverVersion(ChromeVer As String) As String
-    Dim http 'As XMLHTTP60
+    Dim http
     Dim url As String
+
+    ChromeVer = ToBuild(ChromeVer)
     
-    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    
+    'ChromeVer.114までのWebDriver配布サイト
     url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" & ChromeVer
     http.Open "GET", url, False
     http.send
     
-    If http.statusText = "OK" Then
+    If http.Status = 200 Then
         RequestWebDriverVersion = http.responseText
         Exit Function
     End If
     
-    Set http = CreateObject("MSXML2.ServerXMLHTTP")
+    'ChromeVer.115からのWebDriver配布サイト
     url = "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build.json"
     http.Open "GET", url, False
     http.send
     
-    If http.statusText <> "OK" Then
+    If http.Status <> 200 Then
         Err.Raise 4003, , "適合ドライバーの情報を取得できませんでした"
         Exit Function
     End If
-    
+
     RequestWebDriverVersion = ParseJson(http.responseText)("builds")(ChromeVer)("version")
 End Function
 
 
 
-Public Sub InstallWebDriver(Browser As BrowserName, DriverPathTo As String)
+Public Sub InstallWebDriver(Browser As BrowserName, Optional DriverPathTo As String)
     
     If DriverPathTo = "" Then DriverPathTo = WebDriverPath(Browser)
     
@@ -335,7 +339,7 @@ Public Sub InstallWebDriver(Browser As BrowserName, DriverPathTo As String)
     Dim DriverVer As String
     BrowserVer = BrowserVersion(Browser)
     Select Case Browser
-        Case BrowserName.Chrome: DriverVer = RequestWebDriverVersion(ToBuild(BrowserVer))
+        Case BrowserName.Chrome: DriverVer = RequestWebDriverVersion(BrowserVer)
         Case BrowserName.Edge:   DriverVer = BrowserVer
     End Select
     
@@ -384,7 +388,7 @@ End Sub
 
 
 
-Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
+Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String, Optional CapabilityArgs As String)
     
     Dim driverPath As String
     driverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
@@ -402,7 +406,15 @@ Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional Custom
         Case BrowserName.Chrome: Driver.Chrome driverPath
         Case BrowserName.Edge:   Driver.Edge driverPath
     End Select
-    Driver.OpenBrowser
+
+    If CapabilityArgs <> "" Then
+        Dim cap As Capabilities
+        Set cap = Driver.CreateCapabilities()
+        cap.SetArguments CapabilityArgs
+        Driver.OpenBrowser cap
+    Else
+        Driver.OpenBrowser
+    End If
     
     If TmpDriver <> "" Then Call DeleteTempDriver(TmpDriver)
     Exit Sub
@@ -441,7 +453,7 @@ Function IsLatestDriver(Browser As BrowserName, driverPath As String) As Boolean
     
     '// Chromeは末尾のバージョンがブラウザとドライバーで異なることがある
     Case BrowserName.Chrome
-        IsLatestDriver = RequestWebDriverVersion(ToBuild(BrowserVersion(Chrome))) = DriverVersion(driverPath)
+        IsLatestDriver = RequestWebDriverVersion(BrowserVersion(Chrome)) = DriverVersion(driverPath)
     
     End Select
 End Function
