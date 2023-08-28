@@ -6,7 +6,7 @@ Enum BrowserName
     Edge
 End Enum
 
-#Const DEV = 0
+#Const DEV = 1
 
 Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" ( _
     ByVal lpszUrlName As String) As Long
@@ -239,7 +239,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     http.Open "GET", url, False
     http.send
     
-    If http.status <> 200 Then
+    If http.Status <> 200 Then
         Err.Raise 4001, , "ダウンロード失敗 : " & url
         Exit Function
     End If
@@ -264,6 +264,7 @@ Public Function Extract(PathFrom As String, Optional PathTo As String) As String
     If PathTo = "" Then PathTo = Left(PathFrom, Len(PathFrom) - 4)
     
     Debug.Print "zipを展開します"
+    If fso.FolderExists(PathTo) Then fso.DeleteFolder PathTo, True
     fso.CreateFolder PathTo
     Debug.Print "    一時フォルダ : " & PathTo
     
@@ -598,7 +599,7 @@ End Function
 
 'コマンドを実行した時の標準出力を読み取る関数
 '戻り値 Array(成功したかどうか,標準出力)
-Function ReadStdOut(Cmd As String)
+Function ReadStdOut(cmd As String)
     Const FAILED = 0
     Dim Result_IsSuccess As Boolean
     Dim Result_StdOut    As String
@@ -623,8 +624,8 @@ Function ReadStdOut(Cmd As String)
     si.hStdError = WritePipe
     si.wShowWindow = SW_HIDE
     
-    Cmd = "/c " & Cmd
-    If CreateProcess("C:\Windows\System32\cmd.exe", Cmd, 0&, 0&, 1&, 0&, 0&, "C:\", si, pi) = FAILED Then
+    cmd = "/c " & cmd
+    If CreateProcess("C:\Windows\System32\cmd.exe", cmd, 0&, 0&, 1&, 0&, 0&, "C:\", si, pi) = FAILED Then
         GoTo finally
     End If
     

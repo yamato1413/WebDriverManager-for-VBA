@@ -255,7 +255,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     http.Open "GET", url, False
     http.send
     
-    If http.status <> 200 Then
+    If http.Status <> 200 Then
         Err.Raise 4001, , "ダウンロード失敗 : " & url
         Exit Function
     End If
@@ -280,6 +280,7 @@ Public Function Extract(PathFrom As String, Optional PathTo As String) As String
     If PathTo = "" Then PathTo = Left(PathFrom, Len(PathFrom) - 4)
     
     Debug.Print "zipを展開します"
+    If fso.FolderExists(PathTo) Then fso.DeleteFolder PathTo, True
     fso.CreateFolder PathTo
     Debug.Print "    一時フォルダ : " & PathTo
     
