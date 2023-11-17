@@ -25,6 +25,14 @@ Driver.OpenBrowser
 SafeOpen Driver, Edge [,"WebDriverへのパス"] '// 第3引数は省略可
 ```
 ```VB
+'//SeleniumWrapper
+Dim Driver As New WebDriver
+Driver.Edge "WebDriverへのパス"
+Driver.OpenBrowser
+'   ↓
+SafeOpen Driver, BN_Edge [,"WebDriverへのパス"] '// 第3引数は省略可
+```
+```VB
 '// SeleniumBasic
 Dim Driver As New Selenium.ChromeDriver
 Driver.Start 
