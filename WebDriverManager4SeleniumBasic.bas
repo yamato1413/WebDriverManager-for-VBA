@@ -237,8 +237,8 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
     Case BrowserName.Chrome
         Select Case True
             Case ToMajor(Version) < 115: url = Replace("https://chromedriver.storage.googleapis.com/{version}/chromedriver_win32.zip", "{version}", Version)
-            Case Is64BitOS:              url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win64/chromedriver-win64.zip", "{version}", Version)
-            Case Else:                   url = Replace("https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/win32/chromedriver-win32.zip", "{version}", Version)
+            Case Is64BitOS:              url = Replace("https://storage.googleapis.com/chrome-for-testing-public/{version}/win64/chromedriver-win64.zip", "{version}", Version)
+            Case Else:                   url = Replace("https://storage.googleapis.com/chrome-for-testing-public/{version}/win32/chromedriver-win32.zip", "{version}", Version)
         End Select
         
     Case BrowserName.Edge
