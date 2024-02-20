@@ -232,6 +232,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
+    fso.DeleteFolder PathSaveTo
     DeleteUrlCacheEntry url
     
     Dim http

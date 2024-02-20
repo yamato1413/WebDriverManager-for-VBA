@@ -232,8 +232,9 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
+    fso.DeleteFolder PathSaveTo
     DeleteUrlCacheEntry url
-    
+
     Dim http
     Set http = CreateObject("MSXML2.XMLHTTP")
     http.Open "GET", url, False
