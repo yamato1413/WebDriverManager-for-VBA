@@ -248,7 +248,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
-    fso.DeleteFolder PathSaveTo
+    If fso.FolderExists(PathSaveTo) Then fso.DeleteFolder PathSaveTo, True
     DeleteUrlCacheEntry url
 
     Dim http

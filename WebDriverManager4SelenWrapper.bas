@@ -232,7 +232,7 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         End Select
     End Select
     
-    fso.DeleteFolder PathSaveTo
+    If fso.FolderExists(PathSaveTo) Then fso.DeleteFolder PathSaveTo, True
     DeleteUrlCacheEntry url
 
     Dim http
@@ -287,7 +287,7 @@ End Function
 Public Function FindExe(FolderPath) As String
     Dim f
     For Each f In fso.GetFolder(FolderPath).Files
-        If f.name Like "*.exe" Then FindExe = f.path
+        If f.Name Like "*.exe" Then FindExe = f.path
         If FindExe <> "" Then Exit Function
     Next
 
@@ -651,4 +651,3 @@ finally:
     
     ReadStdOut = Array(Result_IsSuccess, Result_StdOut)
 End Function
-
