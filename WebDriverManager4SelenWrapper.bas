@@ -389,7 +389,7 @@ Public Sub CreateFolderEx(path_folder As String)
 End Sub
 
 Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String, Optional WebDriverOptions As WebDriverOptions = Nothing)
-    
+    On Error GoTo Catch
     Dim driverPath As String
     driverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
     
@@ -401,7 +401,6 @@ Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional Custom
         Call InstallWebDriver(Browser, driverPath)
     End If
     
-    On Error GoTo Catch
     Select Case Browser
         Case BrowserName.BN_Chrome: Driver.Chrome driverPath
         Case BrowserName.BN_Edge:   Driver.Edge driverPath

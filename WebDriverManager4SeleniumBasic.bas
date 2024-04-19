@@ -408,7 +408,7 @@ End Sub
 
 '// SeleniumBasicの Driver.Startをこれに置き換えれば、バージョンアップや新規PCへの配布時に余計な操作がいらない
 Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName, Optional CustomDriverPath As String)
-    
+    On Error GoTo Catch
     Dim DriverPath As String
     DriverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
     
@@ -420,7 +420,6 @@ Public Sub SafeOpen(Driver As Selenium.WebDriver, Browser As BrowserName, Option
         Call InstallWebDriver(Browser, DriverPath)
     End If
     
-    On Error GoTo Catch
     Select Case Browser
         Case BrowserName.Chrome: Driver.Start "chrome"
         Case BrowserName.Edge: Driver.Start "edge"

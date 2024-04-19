@@ -391,7 +391,7 @@ End Sub
 
 
 Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional CustomDriverPath As String, Optional CapabilityArgs As String)
-    
+    On Error GoTo Catch
     Dim driverPath As String
     driverPath = IIf(CustomDriverPath <> "", CustomDriverPath, WebDriverPath(Browser))
     
@@ -403,7 +403,6 @@ Public Sub SafeOpen(Driver As WebDriver, Browser As BrowserName, Optional Custom
         Call InstallWebDriver(Browser, driverPath)
     End If
     
-    On Error GoTo Catch
     Select Case Browser
         Case BrowserName.Chrome: Driver.Chrome driverPath
         Case BrowserName.Edge:   Driver.Edge driverPath
