@@ -8,6 +8,8 @@ End Enum
 
 #Const DEV = 0
 
+Private Declare PtrSafe Sub Sleep Lib "kernel32" Alias "Sleep" (ByVal dwMilliseconds As Long)
+
 Private Declare PtrSafe Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" ( _
     ByVal lpszUrlName As String) As Long
     
@@ -268,6 +270,11 @@ Public Function Extract(PathFrom As String, Optional PathTo As String) As String
     If fso.FolderExists(PathTo) Then fso.DeleteFolder PathTo, True
     fso.CreateFolder PathTo
     Debug.Print "    一時フォルダ : " & PathTo
+
+    Do Until fso.FolderExists(PathTo)
+        Sleep 100
+        DoEvents
+    Loop
     
     'PowerShellを使って展開するとマルウェア判定されたので，
     'MS非推奨だがShell.Applicationを使ってzipを解凍する
@@ -360,6 +367,10 @@ Public Sub InstallWebDriver(Browser As BrowserName, Optional DriverPathTo As Str
     If Not fso.FolderExists(fso.GetParentFolderName(DriverPathTo)) Then
         Debug.Print "   WebDriverの保存先フォルダを作成します"
         CreateFolderEx fso.GetParentFolderName(DriverPathTo)
+        Do Until fso.FolderExists(fso.GetParentFolderName(DriverPathTo))
+            Sleep 100
+            DoEvents
+        Loop
     End If
     
     Dim ExtractedFolder As String
@@ -455,6 +466,11 @@ Function BuckupTempDriver(driverPath As String) As String
     Dim TempFolder As String
     TempFolder = fso.BuildPath(fso.GetParentFolderName(driverPath), fso.GetTempName)
     fso.CreateFolder TempFolder
+
+    Do Until fso.FolderExists(TempFolder)
+        Sleep 100
+        DoEvents
+    Loop
     
     Dim TempDriver As String
     TempDriver = fso.BuildPath(TempFolder, fso.GetFileName(driverPath))
