@@ -245,8 +245,8 @@ Public Function DownloadWebDriver(Browser As BrowserName, Version As String, Opt
         
     Case BrowserName.Edge
         Select Case Is64BitOS
-            Case True: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win64.zip", "{version}", Version)
-            Case Else: url = Replace("https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip", "{version}", Version)
+            Case True: url = Replace("https://msedgedriver.microsoft.com/{version}/edgedriver_win64.zip", "{version}", Version)
+            Case Else: url = Replace("https://msedgedriver.microsoft.com/{version}/edgedriver_win32.zip", "{version}", Version)
         End Select
     End Select
     
